@@ -24,7 +24,7 @@ starttime = time.time()
 
 '''PART 1: CREATE CANDIDATE DIRECTION VECTORS'''
 # Load the STL file
-mesh = trimesh.load(r"G:\Chrome downloads\xyzrgb_dragon.ply\xyzrgb_dragon.ply")
+mesh = trimesh.load(r"G:\Chrome downloads\xyzrgb-dragon-by-renato-tarabella\xyzrgb_dragon_90.stl")
 
 # Specify the margin by which the bounding box should be expanded
 margin = 5.0  # You can adjust this value as needed
@@ -449,3 +449,99 @@ partingSurfacePlotter.show()
 # # Keep the plot displayed after the loop finishes
 # plt.ioff()  # Turn off interactive mode
 # plt.show()
+
+# ! TESTING THE BELOW PART:
+
+'''PART 10: SPLIT CONVEX HULL FACES BASED ON ALIGNMENT WITH DIRECTION VECTORS'''
+
+print("\n" + "="*80)
+print("SPLITTING CONVEX HULL BASED ON DIRECTION VECTORS")
+print("="*80)
+
+mesh2 = trimesh.load(r"G:\Chrome downloads\xyzrgb-dragon-by-renato-tarabella\xyzrgb_dragon_90_hull_scaled_tessellated.stl")
+
+# Convert the trimesh convex hull (mesh2) to get face normals
+# Note: mesh2 is already defined in the code as the expanded bounding box
+convex_hull_vertices = mesh2.vertices
+convex_hull_faces = mesh2.faces
+
+# Create a pyvista mesh for better visualization
+convex_hull_pv = create_mesh(convex_hull_vertices, convex_hull_faces)
+
+# Calculate face normals for the convex hull
+convex_hull_pv.compute_normals(cell_normals=True, point_normals=False, inplace=True)
+convex_hull_normals = convex_hull_pv.cell_normals
+
+# Normalize direction vectors again to be sure
+d1_norm = d1 / np.linalg.norm(d1)
+d2_norm = d2 / np.linalg.norm(d2)
+
+print(f"Direction 1: {d1_norm}")
+print(f"Direction 2: {d2_norm}")
+
+# Initialize arrays to store faces belonging to each direction
+d1_aligned_faces = []
+d2_aligned_faces = []
+
+# For each face, check if it's more aligned with d1 or d2
+# We do this by comparing the dot product with each direction
+for i, face in enumerate(convex_hull_faces):
+    # Get the face normal
+    normal = convex_hull_normals[i]
+
+    # Calculate dot products with both directions
+    # We use absolute values since we care about alignment regardless of direction
+    dot_d1 = np.dot(normal, d1_norm)
+    dot_d2 = np.dot(normal, d2_norm)
+
+    print(f"Face {i}: Normal {normal}, Dot with d1: {dot_d1}, Dot with d2: {dot_d2}")
+
+    # Assign to direction based on which has the larger dot product with the face normal
+    if dot_d1 > dot_d2:
+        d1_aligned_faces.append(face)
+    else:
+        d2_aligned_faces.append(face)
+
+# Convert the face lists to numpy arrays
+d1_aligned_faces = np.array(d1_aligned_faces) if d1_aligned_faces else np.empty((0, 3), dtype=int)
+d2_aligned_faces = np.array(d2_aligned_faces) if d2_aligned_faces else np.empty((0, 3), dtype=int)
+
+# Create separate meshes for visualization
+d1_hull_mesh = create_mesh(convex_hull_vertices, d1_aligned_faces) if len(d1_aligned_faces) > 0 else None
+d2_hull_mesh = create_mesh(convex_hull_vertices, d2_aligned_faces) if len(d2_aligned_faces) > 0 else None
+
+# Print information about the split
+print(f"Convex hull has {len(convex_hull_faces)} total faces")
+print(f"  - {len(d1_aligned_faces)} faces aligned with direction 1 {d1_norm}")
+print(f"  - {len(d2_aligned_faces)} faces aligned with direction 2 {d2_norm}")
+
+# Create a plotter for visualization
+hull_plotter = pv.Plotter()
+
+# Add arrows to represent the direction vectors
+startpoint = center
+endpoint1 = center + d1_scaled
+endpoint2 = center + d2_scaled
+arrow1 = pv.Arrow(startpoint, endpoint1, tip_length=0.2, tip_radius=0.1, shaft_radius=0.05)
+arrow2 = pv.Arrow(startpoint, endpoint2, tip_length=0.2, tip_radius=0.1, shaft_radius=0.05)
+
+# Add the meshes and arrows to the plot
+if d1_hull_mesh is not None:
+    hull_plotter.add_mesh(d1_hull_mesh, color='red', opacity=1, show_edges=True, line_width=2,
+                          label='Faces aligned with d1')
+if d2_hull_mesh is not None:
+    hull_plotter.add_mesh(d2_hull_mesh, color='blue', opacity=1, show_edges=True, line_width=2,
+                          label='Faces aligned with d2')
+
+hull_plotter.add_mesh(arrow1, color='darkred', label='Direction 1')
+hull_plotter.add_mesh(arrow2, color='darkblue', label='Direction 2')
+
+# Add original mesh for reference
+# hull_plotter.add_mesh(mesh, color='lightgray', opacity=0.3, label='Original Mesh')
+
+# Add legend and display the plot
+hull_plotter.add_legend()
+hull_plotter.add_title("Convex Hull Split by Direction Vectors")
+hull_plotter.show()
+
+
