@@ -63,8 +63,10 @@ normals = mesh.face_normals
 center = mesh.centroid
 print(center)
 
-# Number of vectors
-num_vectors = 64
+# Number of vectors -> 1000 gives much better results than 64.
+# Ideally, actually considering the visible faces would be more beneficial.
+
+num_vectors = 1000
 # Generate evenly distributed points on a sphere using the Fibonacci lattice
 indices = np.arange(0, num_vectors, dtype=float) + 0.5
 phi = np.arccos(1 - 2*indices/num_vectors)

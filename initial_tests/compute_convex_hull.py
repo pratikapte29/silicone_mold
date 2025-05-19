@@ -64,7 +64,7 @@ if __name__ == "__main__":
         input_file,
         output_file,
         voxel_size=None,
-        scale_factor=1.1,  # 10% outward scale
+        scale_factor=1.15,  # 15% outward scale
         tessellation_level=3  # Higher values create more detailed tessellation
     )
 
