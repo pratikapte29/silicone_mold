@@ -450,7 +450,7 @@ partingSurfacePlotter.show()
 # plt.ioff()  # Turn off interactive mode
 # plt.show()
 
-# ! TESTING THE BELOW PART:
+# ! PART 10 IS WORKING
 
 '''PART 10: SPLIT CONVEX HULL FACES BASED ON ALIGNMENT WITH DIRECTION VECTORS'''
 
@@ -494,7 +494,7 @@ for i, face in enumerate(convex_hull_faces):
     dot_d1 = np.dot(normal, d1_norm)
     dot_d2 = np.dot(normal, d2_norm)
 
-    print(f"Face {i}: Normal {normal}, Dot with d1: {dot_d1}, Dot with d2: {dot_d2}")
+    # print(f"Face {i}: Normal {normal}, Dot with d1: {dot_d1}, Dot with d2: {dot_d2}")
 
     # Assign to direction based on which has the larger dot product with the face normal
     if dot_d1 > dot_d2:
@@ -544,4 +544,114 @@ hull_plotter.add_legend()
 hull_plotter.add_title("Convex Hull Split by Direction Vectors")
 hull_plotter.show()
 
+# ! TESTING THIS PART NOW:
 
+'''PART 11: SPLIT ORIGINAL MESH BASED ON PROXIMITY TO HULL SECTIONS'''
+
+print("\n" + "=" * 80)
+print("SPLITTING ORIGINAL MESH BASED ON PROXIMITY TO RED OR BLUE HULL SECTIONS")
+print("=" * 80)
+
+# Make sure we have the original mesh (called 'mesh' in the original code)
+original_mesh = mesh
+
+
+# Create KD-Trees for efficient nearest point lookup for the red and blue hull sections
+# First, extract the vertices for each hull section
+def extract_unique_vertices_from_faces(vertices, faces):
+    # Get unique vertex indices from the faces
+    unique_indices = np.unique(faces.flatten())
+    # Return the corresponding vertices
+    return vertices[unique_indices]
+
+
+# Extract unique vertices from red and blue hull sections
+red_hull_vertices = extract_unique_vertices_from_faces(convex_hull_vertices, d1_aligned_faces) if len(
+    d1_aligned_faces) > 0 else np.empty((0, 3))
+blue_hull_vertices = extract_unique_vertices_from_faces(convex_hull_vertices, d2_aligned_faces) if len(
+    d2_aligned_faces) > 0 else np.empty((0, 3))
+
+print(f"Red hull has {len(red_hull_vertices)} unique vertices")
+print(f"Blue hull has {len(blue_hull_vertices)} unique vertices")
+
+# Create KD-Trees for efficient nearest point lookup
+red_kdtree = KDTree(red_hull_vertices) if len(red_hull_vertices) > 0 else None
+blue_kdtree = KDTree(blue_hull_vertices) if len(blue_hull_vertices) > 0 else None
+
+
+# Function to find the closest distance to a point set
+def closest_distance(point, kdtree):
+    if kdtree is None:
+        return float('inf')
+    distance, _ = kdtree.query(point)
+    return distance
+
+
+# Initialize arrays to store faces of the original mesh based on proximity
+red_proximal_faces = []
+blue_proximal_faces = []
+
+# For each face in the original mesh, compute its centroid and find the closest hull section
+for face_idx, face in enumerate(original_mesh.faces):
+    # Compute the centroid of this face
+    face_center = face_centroid(original_mesh, face_idx)
+
+    # Find the closest distance to red and blue hull sections
+    red_distance = closest_distance(face_center, red_kdtree)
+    blue_distance = closest_distance(face_center, blue_kdtree)
+
+    # Assign the face to the closer hull section
+    if red_distance <= blue_distance:
+        red_proximal_faces.append(face)
+    else:
+        blue_proximal_faces.append(face)
+
+# Convert to numpy arrays
+red_proximal_faces = np.array(red_proximal_faces) if red_proximal_faces else np.empty((0, 3), dtype=int)
+blue_proximal_faces = np.array(blue_proximal_faces) if blue_proximal_faces else np.empty((0, 3), dtype=int)
+
+# Create PyVista meshes for visualization
+red_mesh = create_mesh(original_mesh.vertices, red_proximal_faces) if len(red_proximal_faces) > 0 else None
+blue_mesh = create_mesh(original_mesh.vertices, blue_proximal_faces) if len(blue_proximal_faces) > 0 else None
+
+# Print information about the split
+print(f"Original mesh has {len(original_mesh.faces)} total faces")
+print(f"  - {len(red_proximal_faces)} faces closest to red hull section")
+print(f"  - {len(blue_proximal_faces)} faces closest to blue hull section")
+
+# Create a plotter for visualization
+proximity_plotter = pv.Plotter()
+
+# Add the split original mesh
+if red_mesh is not None:
+    proximity_plotter.add_mesh(red_mesh, color='red', opacity=1, show_edges=False, label='Closest to Red Hull')
+if blue_mesh is not None:
+    proximity_plotter.add_mesh(blue_mesh, color='blue', opacity=1, show_edges=False, label='Closest to Blue Hull')
+
+# # Add the hull sections as wireframes for reference
+# if d1_hull_mesh is not None:
+#     proximity_plotter.add_mesh(d1_hull_mesh, color='darkred', opacity=0.1, style='wireframe', line_width=1,
+#                                label='Red Hull')
+# if d2_hull_mesh is not None:
+#     proximity_plotter.add_mesh(d2_hull_mesh, color='darkblue', opacity=0.1, style='wireframe', line_width=1,
+#                                label='Blue Hull')
+
+# Add arrows to represent the direction vectors
+startpoint = center
+endpoint1 = center + d1_scaled
+endpoint2 = center + d2_scaled
+arrow1 = pv.Arrow(startpoint, endpoint1, tip_length=0.15, tip_radius=0.08, shaft_radius=0.03)
+arrow2 = pv.Arrow(startpoint, endpoint2, tip_length=0.15, tip_radius=0.08, shaft_radius=0.03)
+proximity_plotter.add_mesh(arrow1, color='darkred')
+proximity_plotter.add_mesh(arrow2, color='darkblue')
+
+# Add legend and display the plot
+proximity_plotter.add_legend()
+proximity_plotter.add_title("Original Mesh Split by Proximity to Hull Sections")
+proximity_plotter.show()
+
+# Export the split meshes if needed
+if red_mesh is not None:
+    red_mesh.save('mesh_closest_to_red_hull.stl')
+if blue_mesh is not None:
+    blue_mesh.save('mesh_closest_to_blue_hull.stl')
