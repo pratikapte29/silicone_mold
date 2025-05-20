@@ -58,7 +58,7 @@ def compute_convex_hull_from_stl(input_stl_path, output_stl_path, voxel_size=Non
 
 
 if __name__ == "__main__":
-    input_file = r"assets\stl\xyzrgb_dragon.stl"
+    input_file = r"assets\stl\lucy_reduced.stl"
 
     base_name = os.path.splitext(os.path.basename(input_file))[0]
     output_dir = os.path.join("results", base_name)

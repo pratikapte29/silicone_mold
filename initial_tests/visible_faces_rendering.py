@@ -8,6 +8,9 @@ import os
 from PIL import Image
 import time
 
+"""
+ABSOLUTELY USELESS CODE, NOTHING WORKS!
+"""
 
 class PartingDirectionFinder:
     def __init__(self, mesh_path, num_candidates=64, render_resolution=512):

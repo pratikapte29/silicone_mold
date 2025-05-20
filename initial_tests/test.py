@@ -474,6 +474,9 @@ convex_hull_pv = create_mesh(convex_hull_vertices, convex_hull_faces)
 convex_hull_pv.compute_normals(cell_normals=True, point_normals=False, inplace=True)
 convex_hull_normals = convex_hull_pv.cell_normals
 
+d1 = np.array([0.01620185, -0.04167134, 0.999])
+d2 = -d1
+
 # Normalize direction vectors again to be sure
 d1_norm = d1 / np.linalg.norm(d1)
 d2_norm = d2 / np.linalg.norm(d2)
