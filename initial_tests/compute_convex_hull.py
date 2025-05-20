@@ -1,5 +1,6 @@
 import numpy as np
 import open3d as o3d
+import os
 
 
 def compute_convex_hull_from_stl(input_stl_path, output_stl_path, voxel_size=None, scale_factor=1.1,
@@ -57,8 +58,12 @@ def compute_convex_hull_from_stl(input_stl_path, output_stl_path, voxel_size=Non
 
 
 if __name__ == "__main__":
-    input_file = r"G:\Chrome downloads\xyzrgb-dragon-by-renato-tarabella\xyzrgb_dragon_90.stl"
-    output_file = r"G:\Chrome downloads\xyzrgb-dragon-by-renato-tarabella\xyzrgb_dragon_90_hull_scaled_tessellated.stl"
+    input_file = r"assets\stl\xyzrgb_dragon.stl"
+
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
+    output_dir = os.path.join("results", base_name)
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, base_name + "_hull.stl")
 
     hull_mesh, original_mesh, pcd = compute_convex_hull_from_stl(
         input_file,
