@@ -1,4 +1,5 @@
 from src.finalize_draw_direction import FinalizeDrawDirection
+from src.convex_hull_operations import compute_convex_hull_from_stl
 import time
 
 start_time = time.time()
