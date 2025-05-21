@@ -25,8 +25,28 @@ def face_centroid(mesh, face_index):
     return centroid
 
 
+def offset_stl(file_path, offset_distance):
+    # Load STL
+    mesh = pv.read(file_path)
+
+    # Compute point normals
+    mesh = mesh.compute_normals(auto_orient_normals=True, point_normals=True, inplace=False)
+
+    # Offset the points along their normals
+    offset_points = mesh.points + offset_distance * mesh.point_normals
+
+    # Create new mesh with offset points and same faces
+    offset_mesh = pv.PolyData(offset_points, mesh.faces)
+
+    return mesh, offset_mesh
+
+
 def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):
     """
+    Idea is to split the mesh on 2 criteria:
+    1. Alignment of face normal with the draw direction
+    2. Proximity to the convex hull section
+
     :param mesh: input mesh body
     :param convex_hull: convex hull of the mesh
     :param hull_faces_1:
