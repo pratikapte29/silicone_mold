@@ -26,6 +26,12 @@ def face_centroid(mesh, face_index):
 
 
 def offset_stl(file_path, offset_distance):
+    """
+    Offset the STL mesh along its normals by a specified distance.
+    :param file_path: Path to the STL file
+    :param offset_distance: Distance to offset the mesh along its normals
+    :return: pv.PolyData mesh and pv.PolyData offset_mesh
+    """
     # Load STL
     mesh = pv.read(file_path)
 
