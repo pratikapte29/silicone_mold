@@ -43,9 +43,7 @@ def offset_stl(file_path, offset_distance):
 
 def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):
     """
-    Idea is to split the mesh on 2 criteria:
-    1. Alignment of face normal with the draw direction
-    2. Proximity to the convex hull section
+    Use the offset mesh instead of the convex hull for splitting the mesh
 
     :param mesh: input mesh body
     :param convex_hull: convex hull of the mesh
