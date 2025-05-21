@@ -1,11 +1,13 @@
 import trimesh
 import open3d as o3d
+import numpy as np
 
 from src.finalize_draw_direction import FinalizeDrawDirection
 from src.convex_hull_operations import compute_convex_hull_from_stl
 from src.convex_hull_operations import create_mesh, split_convex_hull, display_hull
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
 from src.split_mesh import split_mesh_faces, display_split_faces
+from src.split_mesh import offset_stl
 import time
 import sys
 
@@ -33,6 +35,15 @@ except ValueError:
 
 start_time = time.time()
 
+""" COMPUTE OFFSET SURFACE OF THE MESH """
+# ! Region growing would need to be used if offset is to be used
+# coz we are splitting the convex hull purely on the normal orientation
+
+tri_mesh = trimesh.load(mesh_path)
+bounding_box = tri_mesh.bounds
+max_dimension = np.max(bounding_box[1] - bounding_box[0])
+pv_mesh, offset_mesh = offset_stl(mesh_path, 0.5 * max_dimension)
+
 """ COMPUTE CONVEX HULL OF THE MESH """
 
 convex_hull, o3dmesh, pcd, convex_hull_path = compute_convex_hull_from_stl(mesh_path)
@@ -51,9 +62,10 @@ print("Ideal Draw Direction: ", draw_direction)
 
 d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
 
-""" SPLIT MESH FACES """
+# Display the convex hull
+display_hull(d1_hull_mesh, d2_hull_mesh)
 
-tri_mesh = trimesh.load(mesh_path)
+""" SPLIT MESH FACES """
 
 red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
 
