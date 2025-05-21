@@ -16,8 +16,8 @@ def create_mesh(vertices, faces):
     return pv.PolyData(vertices, faces)
 
 
-def compute_convex_hull_from_stl(input_stl_path, output_stl_path, voxel_size=None, scale_factor=1.1,
-                                 tessellation_level=3):
+def compute_convex_hull_from_stl(input_stl_path, voxel_size=None,
+                                 scale_factor=1.15, tessellation_level=3):
     # Load STL mesh
     print(f"Loading mesh from {input_stl_path}")
     mesh = o3d.io.read_triangle_mesh(input_stl_path)
@@ -62,12 +62,17 @@ def compute_convex_hull_from_stl(input_stl_path, output_stl_path, voxel_size=Non
     scaled_vertices = (vertices - centroid) * scale_factor + centroid
     hull_mesh.vertices = o3d.utility.Vector3dVector(scaled_vertices)
 
+    base_name = os.path.splitext(os.path.basename(input_stl_path))[0]
+    output_dir = os.path.join("results", base_name)
+    os.makedirs(output_dir, exist_ok=True)
+    output_stl_path = os.path.join(output_dir, base_name + "_hull.stl")
+
     # Save the scaled convex hull
     print(f"Saving convex hull mesh to {output_stl_path}")
     o3d.io.write_triangle_mesh(output_stl_path, hull_mesh)
 
     print("Done!")
-    return hull_mesh, mesh, pcd
+    return hull_mesh, mesh, pcd, output_stl_path
 
 
 def split_convex_hull(hull_mesh: trimesh.Trimesh, draw_direction: np.ndarray):

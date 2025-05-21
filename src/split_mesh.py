@@ -2,7 +2,7 @@ import numpy as np
 import trimesh
 from scipy.spatial import KDTree
 import pyvista as pv
-from convex_hull_operations import create_mesh
+from src.convex_hull_operations import create_mesh
 
 
 def extract_unique_vertices_from_faces(vertices, faces):
