@@ -43,9 +43,8 @@ def offset_stl(file_path, offset_distance):
 
 def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):
     """
-    Idea is to split the mesh on 2 criteria:
-    1. Alignment of face normal with the draw direction
-    2. Proximity to the convex hull section
+    Split the mesh faces based on proximity to the convex hull sections.
+    However, skip the parts of the hull which are very close to the boundary surface.
 
     :param mesh: input mesh body
     :param convex_hull: convex hull of the mesh
@@ -54,25 +53,65 @@ def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_f
     :return: red_mesh, blue_mesh (PyVista meshes)
     """
 
+    bounding_box = convex_hull.bounds
+    max_dimension = np.max(bounding_box[1] - bounding_box[0])
+
     # Extract unique vertices from red and blue hull sections
     red_hull_vertices = extract_unique_vertices_from_faces(convex_hull.vertices, hull_faces_1) if len(
         hull_faces_1) > 0 else np.empty((0, 3))
     blue_hull_vertices = extract_unique_vertices_from_faces(convex_hull.vertices, hull_faces_2) if len(
         hull_faces_2) > 0 else np.empty((0, 3))
 
-    # Create KD-Trees for efficient nearest point lookup
-    red_kdtree = KDTree(red_hull_vertices) if len(red_hull_vertices) > 0 else None
-    blue_kdtree = KDTree(blue_hull_vertices) if len(blue_hull_vertices) > 0 else None
+    # Define boundary threshold distance
+    boundary_threshold = 0.15 * max_dimension  # d is your threshold distance
+
+    # Identify hull vertices that are close to the boundary between the two regions
+    def identify_boundary_hull_vertices(red_vertices, blue_vertices, threshold):
+        """
+        Identify hull vertices that are close to the boundary between red and blue regions.
+        Returns a boolean mask for each set indicating whether each vertex is far enough from the boundary.
+        """
+        if len(red_vertices) == 0 or len(blue_vertices) == 0:
+            return np.ones(len(red_vertices), dtype=bool), np.ones(len(blue_vertices), dtype=bool)
+
+        # Create KD-Trees for efficient nearest neighbor search
+        red_tree = KDTree(red_vertices)
+        blue_tree = KDTree(blue_vertices)
+
+        # Find the distance from each red vertex to the closest blue vertex
+        distances_red_to_blue, _ = blue_tree.query(red_vertices, k=1)
+
+        # Find the distance from each blue vertex to the closest red vertex
+        distances_blue_to_red, _ = red_tree.query(blue_vertices, k=1)
+
+        # Create masks for vertices that are far enough from the boundary
+        red_far_from_boundary = distances_red_to_blue > threshold
+        blue_far_from_boundary = distances_blue_to_red > threshold
+
+        return red_far_from_boundary, blue_far_from_boundary
+
+    # Apply the filter to identify hull vertices away from the boundary
+    red_far_from_boundary, blue_far_from_boundary = identify_boundary_hull_vertices(
+        red_hull_vertices, blue_hull_vertices, boundary_threshold)
+
+    # Filter hull vertices for KD-Trees - exclude those close to the boundary
+    red_hull_vertices_filtered = red_hull_vertices[red_far_from_boundary]
+    blue_hull_vertices_filtered = blue_hull_vertices[blue_far_from_boundary]
+
+    # Create KD-Trees using only hull vertices far from the boundary
+    red_kdtree = KDTree(red_hull_vertices_filtered) if len(red_hull_vertices_filtered) > 0 else None
+    blue_kdtree = KDTree(blue_hull_vertices_filtered) if len(blue_hull_vertices_filtered) > 0 else None
 
     red_proximal_faces = []
     blue_proximal_faces = []
 
-    # For each face in the original mesh, compute its centroid and find the closest hull section
+    # Process all mesh faces based on proximity to filtered hull vertices
     for face_idx, face in enumerate(mesh.faces):
         # Compute the centroid of this face
         face_center = face_centroid(mesh, face_idx)
 
         # Find the closest distance to red and blue hull sections
+        # using only hull vertices that are far from the boundary
         red_distance = closest_distance(face_center, red_kdtree)
         blue_distance = closest_distance(face_center, blue_kdtree)
 
