@@ -102,24 +102,49 @@ class FinalizeDrawDirection:
         """
         Projects the mesh onto a plane perpendicular to 'direction' and computes the convex hull area.
         """
-        # Normalize direction
+
         direction = direction / np.linalg.norm(direction)
 
-        # Projection matrix to drop component along 'direction'
-        projection_matrix = np.eye(3) - np.outer(direction, direction)
+        # Get all vertices of the mesh
+        points = self.vertices
 
-        # Project triangle centroids (to avoid degenerate triangle issues)
-        triangle_centroids = self.mesh.triangles_center @ projection_matrix.T
-        triangle_centroids_2d = triangle_centroids[:, :2]  # Project to 2D
+        # Project points onto a plane perpendicular to direction
+        # Plane origin is mesh centroid
+        projected_2d = trimesh.points.project_to_plane(
+            points,
+            plane_normal=direction,
+            plane_origin=self.center,
+            return_planar=True  # return as (n, 2)
+        )
 
-        if len(triangle_centroids_2d) < 3:
-            return 0.0
-
+        # Compute the convex hull of the 2D projection
         try:
-            hull = ConvexHull(triangle_centroids_2d)
-            return hull.volume  # 2D area
-        except:
-            return 0.0
+            hull = ConvexHull(projected_2d)
+            area = hull.area  # This is 2D perimeter, not area
+            area = hull.volume  # In 2D, volume is actually area
+        except Exception:
+            area = 0.0  # In case the hull can't be constructed (e.g., degenerate)
+
+        return area
+
+        # # Normalize direction
+        # direction = direction / np.linalg.norm(direction)
+        #
+        # # Projection matrix to drop component along 'direction'
+        # projection_matrix = np.eye(3) - np.outer(direction, direction)
+        #
+        # # Project triangle centroids (to avoid degenerate triangle issues)
+        # triangle_centroids = self.mesh.triangles_center @ projection_matrix.T
+        # triangle_centroids_2d = triangle_centroids[:, :2]  # Project to 2D
+        #
+        # if len(triangle_centroids_2d) < 3:
+        #     return 0.0
+        #
+        # try:
+        #     hull = ConvexHull(triangle_centroids_2d)
+        #     return hull.volume  # 2D area
+        # except:
+        #     return 0.0
 
     def computeVisibleAreas(self, vectors: list):
         """

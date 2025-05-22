@@ -38,6 +38,6 @@ def highlight_intersections(stl_path, direction):
 
 # Example usage:
 if __name__ == "__main__":
-    stl_file = r"..\assets\stl\lucy.stl"
-    d = np.array([-0.00213098, 0.61680977, -0.78710938])  # replace with your input direction
+    stl_file = r"..\assets\stl\xyzrgb_dragon.stl"
+    d = np.array([0.2165375, 0.82532754, 0.52148438])  # replace with your input direction
     highlight_intersections(stl_file, d)
