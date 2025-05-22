@@ -66,26 +66,26 @@ print("Ideal Draw Direction: ", draw_direction)
 
 """ SPLIT CONVEX HULL """
 
-# d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
+d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
 
 # ! Added
-""" SPLIT OFFSET SURFACE """
-
-d1_off_mesh, d2_off_mesh, d1_off_faces, d2_off_faces = split_convex_hull(offset_mesh, draw_direction)
-display_hull(d1_off_mesh, d2_off_mesh)
+# """ SPLIT OFFSET SURFACE """
+#
+# d1_off_mesh, d2_off_mesh, d1_off_faces, d2_off_faces = split_convex_hull(offset_mesh, draw_direction)
+# display_hull(d1_off_mesh, d2_off_mesh)
 
 # ! Added
-""" SPLIT MESH FACES BASED ON OFFSET SURFACE """
-
-tri_mesh = trimesh.load(mesh_path)
-
-red_mesh, blue_mesh = split_mesh_faces(tri_mesh, offset_mesh, d1_off_faces, d2_off_faces)
+# """ SPLIT MESH FACES BASED ON OFFSET SURFACE """
+#
+# tri_mesh = trimesh.load(mesh_path)
+#
+# red_mesh, blue_mesh = split_mesh_faces(tri_mesh, offset_mesh, d1_off_faces, d2_off_faces)
 
 """ SPLIT MESH FACES """
 
-# tri_mesh = trimesh.load(mesh_path)
-#
-# red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
+tri_mesh = trimesh.load(mesh_path)
+
+red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
 
 end_time = time.time()
 print(f"Total time taken is {end_time - start_time:.2f} seconds")
