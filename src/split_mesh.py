@@ -3,6 +3,7 @@ import trimesh
 from scipy.spatial import KDTree
 import pyvista as pv
 from src.convex_hull_operations import create_mesh
+from skimage import measure
 
 
 def extract_unique_vertices_from_faces(vertices, faces):
@@ -41,6 +42,12 @@ def pv_to_trimesh(pv_mesh):
 
 
 def offset_stl(file_path, offset_distance):
+    """
+    Naively offset the mesh
+    :param file_path: str
+    :param offset_distance: float
+    :return: pv.PolyData, pv.PolyData
+    """
     # Load STL
     mesh = pv.read(file_path)
 
@@ -54,6 +61,40 @@ def offset_stl(file_path, offset_distance):
     offset_mesh = pv.PolyData(offset_points, mesh.faces)
 
     return mesh, offset_mesh
+
+
+def offset_stl_sdf(mesh_path: str, offset_distance: float, voxel_size=10):
+    """
+    Compute the offset surface of a mesh using Signed Distance Function (SDF) and Marching Cubes algorithm.
+    :param mesh_path: str
+    :param offset_distance: float
+    :param voxel_size: default - 0.01
+    :return: offset_mesh: pyvista.PolyData
+    """
+    # Load mesh using Trimesh
+    tri = trimesh.load(mesh_path)
+
+    # Get bounds and define voxel grid
+    bounds = tri.bounds
+    padding = offset_distance * 2
+    x = np.arange(bounds[0][0] - padding, bounds[1][0] + padding, voxel_size)
+    y = np.arange(bounds[0][1] - padding, bounds[1][1] + padding, voxel_size)
+    z = np.arange(bounds[0][2] - padding, bounds[1][2] + padding, voxel_size)
+    grid = np.stack(np.meshgrid(x, y, z, indexing="ij"), -1).reshape(-1, 3)
+
+    # Compute signed distances
+    sdf = trimesh.proximity.signed_distance(tri, grid)
+
+    # Convert SDF to volume grid
+    sdf_volume = sdf.reshape(len(x), len(y), len(z))
+
+    # Extract iso-surface using Marching Cubes
+    verts, faces, _, _ = measure.marching_cubes(sdf_volume, level=-offset_distance, spacing=(voxel_size,)*3)
+
+    # Convert to PyVista mesh for visualization or export
+    offset_mesh = pv.PolyData(verts, np.hstack([np.full((faces.shape[0], 1), 3), faces]).astype(np.int64))
+
+    return offset_mesh
 
 
 def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):
