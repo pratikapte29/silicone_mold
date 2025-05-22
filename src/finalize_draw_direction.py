@@ -3,6 +3,7 @@ import pyvista as pv
 import numpy as np
 import pyrender
 from pyrender import PerspectiveCamera, DirectionalLight, OffscreenRenderer
+from scipy.spatial import ConvexHull
 
 
 class FinalizeDrawDirection:
@@ -80,9 +81,45 @@ class FinalizeDrawDirection:
         _, depth = renderer.render(scene)
         renderer.delete()
 
-        # Visible pixels: valid depth values below a threshold
-        visible_pixels = np.count_nonzero((depth < 10.0) & (depth > 0))
-        return visible_pixels / (self.resolution[0] * self.resolution[1])
+        # # Visible pixels: valid depth values below a threshold
+        # visible_pixels = np.count_nonzero((depth < 10.0) & (depth > 0))
+        # return visible_pixels / (self.resolution[0] * self.resolution[1])
+        # Get 3D positions of visible points (reverse projection, if intrinsics known)
+        mask = (depth < 10.0) & (depth > 0)
+        ys, xs = np.nonzero(mask)
+        pixels = np.column_stack((xs, ys))
+
+        # Compute convex hull area of 2D projection
+        if len(pixels) >= 3:
+            hull = ConvexHull(pixels)
+            area = hull.volume  # 2D area
+        else:
+            area = 0
+
+        return area
+
+    def projected_area(self, direction: np.ndarray) -> float:
+        """
+        Projects the mesh onto a plane perpendicular to 'direction' and computes the convex hull area.
+        """
+        # Normalize direction
+        direction = direction / np.linalg.norm(direction)
+
+        # Projection matrix to drop component along 'direction'
+        projection_matrix = np.eye(3) - np.outer(direction, direction)
+
+        # Project triangle centroids (to avoid degenerate triangle issues)
+        triangle_centroids = self.mesh.triangles_center @ projection_matrix.T
+        triangle_centroids_2d = triangle_centroids[:, :2]  # Project to 2D
+
+        if len(triangle_centroids_2d) < 3:
+            return 0.0
+
+        try:
+            hull = ConvexHull(triangle_centroids_2d)
+            return hull.volume  # 2D area
+        except:
+            return 0.0
 
     def computeVisibleAreas(self, vectors: list):
         """
@@ -94,9 +131,30 @@ class FinalizeDrawDirection:
         best_dir = None
         max_score = -1
         for dir_vec in vectors:
-            score = self.renderVisibleArea(dir_vec)
+            score = self.projected_area(dir_vec)
             if score > max_score:
                 max_score = score
                 best_dir = dir_vec
 
         return best_dir
+
+
+# TODO: Add this module to the above class
+
+# def projected_area(mesh: trimesh.Trimesh, direction: np.ndarray) -> float:
+#     """
+#     Projects the mesh onto a plane perpendicular to 'direction' and computes the silhouette area.
+#     """
+#     # Build projection matrix (drop the component along direction)
+#     direction = direction / np.linalg.norm(direction)
+#     projection_matrix = np.eye(3) - np.outer(direction, direction)
+#
+#     # Project all vertices
+#     projected_verts = mesh.vertices @ projection_matrix.T
+#
+#     # Create 2D polygon from projection
+#     projected_2d = projected_verts[:, :2]  # take first 2 dimensions
+#     projected_mesh = trimesh.Trimesh(vertices=projected_2d, faces=mesh.faces)
+#
+#     # Compute convex hull or union of triangles
+#     return projected_mesh.convex_hull.area  # or projected_mesh.area
