@@ -44,13 +44,16 @@ tri_convex_hull = trimesh.load(convex_hull_path)
 
 # Hull bounds will be used for offset surface distance calculation
 hull_bounds = tri_convex_hull.bounds
-offset_distance = 0.25 * np.linalg.norm(hull_bounds.extents)
-
+# offset_distance = 0.25 * np.linalg.norm(hull_bounds.extents)
+offset_distance = 0.05 * np.max(hull_bounds[1] - hull_bounds[0])
 # Compute the offset surface of the input mesh
 pv_mesh, offset_mesh = offset_stl(mesh_path, offset_distance)
 
 # Convert offset mesh into trimesh object
 offset_mesh = pv_to_trimesh(offset_mesh)
+print(len(offset_mesh.faces))
+print(len(offset_mesh.vertices))
+# offset_mesh.show()
 
 """ FINALIZE THE DRAW DIRECTION """
 
@@ -63,18 +66,26 @@ print("Ideal Draw Direction: ", draw_direction)
 
 """ SPLIT CONVEX HULL """
 
-d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
+# d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
 
 # ! Added
 """ SPLIT OFFSET SURFACE """
 
 d1_off_mesh, d2_off_mesh, d1_off_faces, d2_off_faces = split_convex_hull(offset_mesh, draw_direction)
+display_hull(d1_off_mesh, d2_off_mesh)
 
-""" SPLIT MESH FACES """
+# ! Added
+""" SPLIT MESH FACES BASED ON OFFSET SURFACE """
 
 tri_mesh = trimesh.load(mesh_path)
 
-red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
+red_mesh, blue_mesh = split_mesh_faces(tri_mesh, offset_mesh, d1_off_faces, d2_off_faces)
+
+""" SPLIT MESH FACES """
+
+# tri_mesh = trimesh.load(mesh_path)
+#
+# red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
 
 end_time = time.time()
 print(f"Total time taken is {end_time - start_time:.2f} seconds")
