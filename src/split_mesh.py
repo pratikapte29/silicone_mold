@@ -25,6 +25,21 @@ def face_centroid(mesh, face_index):
     return centroid
 
 
+def pv_to_trimesh(pv_mesh):
+    """
+    Convert a PyVista PolyData mesh to a Trimesh object.
+    :param pv_mesh: pyvista.PolyData
+    :return: trimesh.Trimesh
+    """
+    # Extract vertices and faces from the PyVista mesh
+    vertices = pv_mesh.points
+    faces = pv_mesh.faces.reshape(-1, 4)[:, 1:]  # Remove the face size (always 3 for triangles)
+
+    # Create a Trimesh object
+    tri_mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    return tri_mesh
+
+
 def offset_stl(file_path, offset_distance):
     # Load STL
     mesh = pv.read(file_path)
