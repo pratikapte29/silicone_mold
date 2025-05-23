@@ -6,7 +6,7 @@ from src.finalize_draw_direction import FinalizeDrawDirection
 from src.convex_hull_operations import compute_convex_hull_from_stl
 from src.convex_hull_operations import create_mesh, split_convex_hull, display_hull
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
-from src.split_mesh import split_mesh_faces, display_split_faces, pv_to_trimesh
+from src.split_mesh import split_mesh_faces, display_split_faces, split_mesh_edges, display_split_edges
 from src.offset_surface_operations import offset_stl_sdf
 import time
 import sys
@@ -81,6 +81,14 @@ d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hu
 # tri_mesh = trimesh.load(mesh_path)
 #
 # red_mesh, blue_mesh = split_mesh_faces(tri_mesh, offset_mesh, d1_off_faces, d2_off_faces)
+
+""" SPLIT MESH BASED ON EDGES """
+tri_mesh = trimesh.load(mesh_path)
+edge_list = split_mesh_edges(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
+
+""" DISPLAY THE SPLIT EDGES """
+display_split_edges(mesh_path, edge_list)
+
 
 """ SPLIT MESH FACES """
 
