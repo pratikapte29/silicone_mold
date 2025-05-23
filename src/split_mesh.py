@@ -3,8 +3,6 @@ import trimesh
 from scipy.spatial import KDTree
 import pyvista as pv
 from src.convex_hull_operations import create_mesh
-from skimage import measure
-from meshlib import mrmeshpy
 
 
 def extract_unique_vertices_from_faces(vertices, faces):
@@ -40,50 +38,6 @@ def pv_to_trimesh(pv_mesh):
     # Create a Trimesh object
     tri_mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
     return tri_mesh
-
-
-def offset_stl(file_path, offset_distance):
-    """
-    Naively offset the mesh
-    :param file_path: str
-    :param offset_distance: float
-    :return: pv.PolyData, pv.PolyData
-    """
-    # Load STL
-    mesh = pv.read(file_path)
-
-    # Compute point normals
-    mesh = mesh.compute_normals(auto_orient_normals=True, point_normals=True, inplace=False)
-
-    # Offset the points along their normals
-    offset_points = mesh.points + offset_distance * mesh.point_normals
-
-    # Create new mesh with offset points and same faces
-    offset_mesh = pv.PolyData(offset_points, mesh.faces)
-
-    return mesh, offset_mesh
-
-
-def offset_stl_sdf(mesh_path: str, offset_distance: float, voxel_size=10):
-    """
-    Compute the offset surface of a mesh using Signed Distance Function (SDF)
-    :param mesh_path: str
-    :param offset_distance: float
-    :param voxel_size: default - 0.01
-    :return: offset_mesh: pyvista.PolyData
-    """
-    # Load mesh using Trimesh
-    closedMesh = mrmeshpy.loadMesh(mesh_path)
-
-    # setup offset parameters
-    params = mrmeshpy.OffsetParameters()
-    params.voxelSize = voxel_size
-
-    # create positive offset mesh
-    posOffset = mrmeshpy.offsetMesh(closedMesh, offset_distance, params)
-
-    # save results
-    mrmeshpy.saveMesh(posOffset, "posOffset.stl")
 
 
 def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):

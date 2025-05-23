@@ -1,3 +1,5 @@
+""" CHECK WHICH FACES ARE INTERSECTED BY THE TWO DRAW DIRECTIONS """
+
 import pyvista as pv
 import numpy as np
 

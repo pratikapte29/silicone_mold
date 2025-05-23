@@ -6,7 +6,8 @@ from src.finalize_draw_direction import FinalizeDrawDirection
 from src.convex_hull_operations import compute_convex_hull_from_stl
 from src.convex_hull_operations import create_mesh, split_convex_hull, display_hull
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
-from src.split_mesh import split_mesh_faces, display_split_faces, offset_stl, pv_to_trimesh
+from src.split_mesh import split_mesh_faces, display_split_faces, pv_to_trimesh
+from src.offset_surface_operations import offset_stl_sdf
 import time
 import sys
 
@@ -40,17 +41,17 @@ convex_hull, o3dmesh, pcd, convex_hull_path = compute_convex_hull_from_stl(mesh_
 tri_convex_hull = trimesh.load(convex_hull_path)
 
 # ! Added
-""" COMPUTE THE OFFSET SURFACE OF THE MESH """
+""" COMPUTE THE OFFSET SURFACE OF THE MESH USING SDF """
 
 # Hull bounds will be used for offset surface distance calculation
 hull_bounds = tri_convex_hull.bounds
 # offset_distance = 0.25 * np.linalg.norm(hull_bounds.extents)
 offset_distance = 0.05 * np.max(hull_bounds[1] - hull_bounds[0])
 # Compute the offset surface of the input mesh
-pv_mesh, offset_mesh = offset_stl(mesh_path, offset_distance)
+offset_stl_path = offset_stl_sdf(mesh_path, offset_distance)
 
 # Convert offset mesh into trimesh object
-offset_mesh = pv_to_trimesh(offset_mesh)
+offset_mesh = trimesh.load(offset_stl_path)
 print(len(offset_mesh.faces))
 print(len(offset_mesh.vertices))
 # offset_mesh.show()
