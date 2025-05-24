@@ -7,7 +7,7 @@ from src.convex_hull_operations import compute_convex_hull_from_stl
 from src.convex_hull_operations import create_mesh, split_convex_hull, display_hull
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
 from src.split_mesh import split_mesh_faces, display_split_faces, split_mesh_edges, display_split_edges
-from src.offset_surface_operations import offset_stl_sdf
+from src.offset_surface_operations import offset_stl_sdf, mesh_hull_dist, display_offset_surface
 import time
 import sys
 
@@ -41,12 +41,14 @@ convex_hull, o3dmesh, pcd, convex_hull_path = compute_convex_hull_from_stl(mesh_
 tri_convex_hull = trimesh.load(convex_hull_path)
 
 # ! Added
+""" GET DISTANCE BETWEEN MESH AND ITS CONVEX HULL """
+
+dist = mesh_hull_dist(mesh_path, convex_hull_path)
+
+# ! Added
 """ COMPUTE THE OFFSET SURFACE OF THE MESH USING SDF """
 
-# Hull bounds will be used for offset surface distance calculation
-hull_bounds = tri_convex_hull.bounds
-# offset_distance = 0.25 * np.linalg.norm(hull_bounds.extents)
-offset_distance = 0.05 * np.max(hull_bounds[1] - hull_bounds[0])
+offset_distance = 1.5 * dist
 # Compute the offset surface of the input mesh
 offset_stl_path = offset_stl_sdf(mesh_path, offset_distance)
 
@@ -54,6 +56,9 @@ offset_stl_path = offset_stl_sdf(mesh_path, offset_distance)
 offset_mesh = trimesh.load(offset_stl_path)
 print(len(offset_mesh.faces))
 print(len(offset_mesh.vertices))
+
+# Display the offset surface along with mesh and convex hull
+display_offset_surface(offset_stl_path, mesh_path, convex_hull_path)
 # offset_mesh.show()
 
 """ FINALIZE THE DRAW DIRECTION """
@@ -68,6 +73,11 @@ print("Ideal Draw Direction: ", draw_direction)
 """ SPLIT CONVEX HULL """
 
 d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
+
+# ! Added
+""" SPLIT THE OFFSET SURFACE BASED ON THE PROXIMITY TO CONVEX HULL """
+
+
 
 # ! Added
 # """ SPLIT OFFSET SURFACE """
