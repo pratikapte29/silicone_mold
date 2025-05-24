@@ -40,13 +40,19 @@ def pv_to_trimesh(pv_mesh):
     return tri_mesh
 
 
-def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_faces_1, hull_faces_2):
+def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh,
+                     offset_mesh: trimesh.Trimesh, hull_faces_1, hull_faces_2):
     """
     Split the mesh faces based on proximity to the convex hull sections.
     However, skip the parts of the hull which are very close to the boundary surface.
 
+    Distance calculation: For each face centroid, calculate:
+    - Distance from face centroid to convex hull + distance from closest hull point to offset surface
+    - Assign face to the hull side with minimum total distance
+
     :param mesh: input mesh body
     :param convex_hull: convex hull of the mesh
+    :param offset_mesh: offset mesh of the input mesh
     :param hull_faces_1:
     :param hull_faces_2:
     :return: red_mesh, blue_mesh (PyVista meshes)
@@ -101,21 +107,40 @@ def split_mesh_faces(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_f
     red_kdtree = KDTree(red_hull_vertices_filtered) if len(red_hull_vertices_filtered) > 0 else None
     blue_kdtree = KDTree(blue_hull_vertices_filtered) if len(blue_hull_vertices_filtered) > 0 else None
 
+    # Create KD-Tree for offset mesh vertices for efficient distance queries
+    offset_kdtree = KDTree(offset_mesh.vertices) if len(offset_mesh.vertices) > 0 else None
+
+    def calculate_total_distance(face_center, hull_kdtree, hull_vertices_filtered):
+        """
+        Calculate total distance: face_centroid -> hull + hull_point -> offset_surface
+        """
+        if hull_kdtree is None or offset_kdtree is None:
+            return float('inf')
+
+        # Find closest point on hull to face centroid
+        hull_distance, hull_idx = hull_kdtree.query(face_center, k=1)
+        closest_hull_point = hull_vertices_filtered[hull_idx]
+
+        # Find distance from closest hull point to offset surface
+        offset_distance, _ = offset_kdtree.query(closest_hull_point, k=1)
+
+        # Return total distance
+        return hull_distance + offset_distance
+
     red_proximal_faces = []
     blue_proximal_faces = []
 
-    # Process all mesh faces based on proximity to filtered hull vertices
+    # Process all mesh faces based on new distance calculation
     for face_idx, face in enumerate(mesh.faces):
         # Compute the centroid of this face
         face_center = face_centroid(mesh, face_idx)
 
-        # Find the closest distance to red and blue hull sections
-        # using only hull vertices that are far from the boundary
-        red_distance = closest_distance(face_center, red_kdtree)
-        blue_distance = closest_distance(face_center, blue_kdtree)
+        # Calculate total distances to red and blue hull sections
+        red_total_distance = calculate_total_distance(face_center, red_kdtree, red_hull_vertices_filtered)
+        blue_total_distance = calculate_total_distance(face_center, blue_kdtree, blue_hull_vertices_filtered)
 
-        # Assign the face to the closer hull section
-        if red_distance <= blue_distance:
+        # Assign the face to the hull section with minimum total distance
+        if red_total_distance <= blue_total_distance:
             red_proximal_faces.append(face)
         else:
             blue_proximal_faces.append(face)
@@ -151,7 +176,7 @@ def split_mesh_edges(mesh: trimesh.Trimesh, convex_hull: trimesh.Trimesh, hull_f
         hull_faces_2) > 0 else np.empty((0, 3))
 
     # Define boundary threshold distance
-    boundary_threshold = 0.3 * max_dimension  # d is your threshold distance
+    boundary_threshold = 0.15 * max_dimension  # d is your threshold distance
 
     # Identify hull vertices that are close to the boundary between the two regions
     def identify_boundary_hull_vertices(red_vertices, blue_vertices, threshold):

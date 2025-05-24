@@ -129,4 +129,7 @@ def split_offset_surface(offset_surface_path: str, d1_aligned_faces: list, d2_al
     :param d2_aligned_faces: list of face indices aligned with direction 2
     :return: tuple (d1_mesh, d2_mesh)
     """
+
+    # Offset surface splitting won't be needed at the moment.
+    # Only the distance will be used such that it can reduce the impact of proximity to convex hull
     pass

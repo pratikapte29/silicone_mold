@@ -7,7 +7,7 @@ from src.convex_hull_operations import compute_convex_hull_from_stl
 from src.convex_hull_operations import create_mesh, split_convex_hull, display_hull
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
 from src.split_mesh import split_mesh_faces, display_split_faces, split_mesh_edges, display_split_edges
-from src.offset_surface_operations import offset_stl_sdf, mesh_hull_dist, display_offset_surface
+from src.offset_surface_operations import offset_stl_sdf, mesh_hull_dist, display_offset_surface, split_offset_surface
 import time
 import sys
 
@@ -74,24 +74,6 @@ print("Ideal Draw Direction: ", draw_direction)
 
 d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hull(tri_convex_hull, draw_direction)
 
-# ! Added
-""" SPLIT THE OFFSET SURFACE BASED ON THE PROXIMITY TO CONVEX HULL """
-
-
-
-# ! Added
-# """ SPLIT OFFSET SURFACE """
-#
-# d1_off_mesh, d2_off_mesh, d1_off_faces, d2_off_faces = split_convex_hull(offset_mesh, draw_direction)
-# display_hull(d1_off_mesh, d2_off_mesh)
-
-# ! Added
-# """ SPLIT MESH FACES BASED ON OFFSET SURFACE """
-#
-# tri_mesh = trimesh.load(mesh_path)
-#
-# red_mesh, blue_mesh = split_mesh_faces(tri_mesh, offset_mesh, d1_off_faces, d2_off_faces)
-
 """ SPLIT MESH BASED ON EDGES """
 tri_mesh = trimesh.load(mesh_path)
 edge_list = split_mesh_edges(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
@@ -104,7 +86,7 @@ display_split_edges(mesh_path, edge_list)
 
 tri_mesh = trimesh.load(mesh_path)
 
-red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
+red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, offset_mesh, d1_aligned_faces, d2_aligned_faces)
 
 end_time = time.time()
 print(f"Total time taken is {end_time - start_time:.2f} seconds")
