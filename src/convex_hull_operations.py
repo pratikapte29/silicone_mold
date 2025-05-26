@@ -17,7 +17,7 @@ def create_mesh(vertices, faces):
 
 
 def compute_convex_hull_from_stl(input_stl_path, voxel_size=None,
-                                 scale_factor=1.15, tessellation_level=3):
+                                 scale_factor=1.05, tessellation_level=3):
     # Load STL mesh
     print(f"Loading mesh from {input_stl_path}")
     mesh = o3d.io.read_triangle_mesh(input_stl_path)

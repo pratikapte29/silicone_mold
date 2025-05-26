@@ -48,7 +48,7 @@ dist = mesh_hull_dist(mesh_path, convex_hull_path)
 # ! Added
 """ COMPUTE THE OFFSET SURFACE OF THE MESH USING SDF """
 
-offset_distance = 1.5 * dist
+offset_distance = dist
 # Compute the offset surface of the input mesh
 offset_stl_path = offset_stl_sdf(mesh_path, offset_distance)
 
@@ -76,10 +76,10 @@ d1_hull_mesh, d2_hull_mesh, d1_aligned_faces, d2_aligned_faces = split_convex_hu
 
 """ SPLIT MESH BASED ON EDGES """
 tri_mesh = trimesh.load(mesh_path)
-edge_list = split_mesh_edges(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
+# edge_list = split_mesh_edges(tri_mesh, tri_convex_hull, d1_aligned_faces, d2_aligned_faces)
 
 """ DISPLAY THE SPLIT EDGES """
-display_split_edges(mesh_path, edge_list)
+# display_split_edges(mesh_path, edge_list)
 
 
 """ SPLIT MESH FACES """
