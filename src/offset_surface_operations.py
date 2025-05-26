@@ -24,7 +24,7 @@ def mesh_hull_dist(mesh_path: str, convex_hull_path: str) -> float:
     d_kdtree, idx = tree.query(mesh.points)
     mesh['distances'] = d_kdtree
 
-    return np.mean(d_kdtree)
+    return np.max(d_kdtree)
 
 
 def offset_stl(file_path, offset_distance):
@@ -49,12 +49,12 @@ def offset_stl(file_path, offset_distance):
     return mesh, offset_mesh
 
 
-def offset_stl_sdf(mesh_path: str, offset_distance: float, voxel_size=1):
+def offset_stl_sdf(mesh_path: str, offset_distance: float, voxel_size=10):
     """
     Compute the offset surface of a mesh using Signed Distance Function (SDF)
     :param mesh_path: str
     :param offset_distance: float
-    :param voxel_size: default - 0.01
+    :param voxel_size: default - 1
     :return: offset_mesh_path: str
     """
     # Load mesh using Trimesh
