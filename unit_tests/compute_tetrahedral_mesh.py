@@ -1,40 +1,41 @@
+import gmsh
+import meshio
 import pyvista as pv
-import tetgen
-import numpy as np
 
-def tetrahedralize_stl(file_path):
-    # Step 1: Load surface mesh from STL
-    surface = pv.read(file_path)
+gmsh.initialize()
+gmsh.option.setNumber("General.Terminal", 1)
 
-    if not surface.is_manifold:
-        print("Warning: STL mesh is not manifold. Tetrahedralization may fail.")
+gmsh.merge(r"assets/stl/cow.stl")
 
-    # Step 2: Convert to TetGen-compatible format
-    tet = tetgen.TetGen(surface)
+# Create a surface loop and volume
+s = gmsh.model.getEntities(2)  # get all surfaces
+gmsh.model.addPhysicalGroup(2, [s[0][1]], tag=1)
 
-    # Step 3: Tetrahedralize (set switches for quality if needed)
-    tet_mesh = tet.tetrahedralize(order=1, mindihedral=10, minratio=1.5)
+# Create surface loop and volume
+sl = gmsh.model.geo.addSurfaceLoop([s[0][1]])
+vol = gmsh.model.geo.addVolume([sl])
+gmsh.model.addPhysicalGroup(3, [vol], tag=2)
 
-    return tet_mesh
+gmsh.model.geo.synchronize()
 
-def slice_tetmesh(tet_mesh, origin=None, normal=(0, 0, 1)):
-    # Default slice through center
-    if origin is None:
-        origin = tet_mesh.center
+# Now generate 3D tetrahedral mesh
+gmsh.model.mesh.generate(3)
+gmsh.write("mesh.msh")
+gmsh.finalize()
 
-    # Create a slicing plane
-    plane = tet_mesh.slice(normal=normal, origin=origin)
-    return plane
+# --- Convert to VTK using meshio ---
+mesh = meshio.read("mesh.msh")
+meshio.write("output.vtu", mesh)  # Use .vtu for unstructured tetrahedral mesh
 
-def visualize_tet_and_slice(tet_mesh, slice_surface):
-    p = pv.Plotter()
-    p.add_mesh(tet_mesh, show_edges=True, opacity=0.2, color='lightblue')
-    p.add_mesh(slice_surface, color='red', line_width=2)
-    p.add_axes()
-    p.show()
+# --- Load in PyVista ---
+grid = pv.read("output.vtu")
 
-# === Example Usage ===
-stl_file = "your_file.stl"  # Replace with your STL path
-tet_mesh = tetrahedralize_stl(stl_file)
-slice_surface = slice_tetmesh(tet_mesh, normal=(0, 0, 1))
-visualize_tet_and_slice(tet_mesh, slice_surface)
+# --- Clip at centroid ---
+centroid = grid.center
+clipped = grid.clip(normal='z', origin=centroid, invert=False)
+
+# --- Visualize ---
+plotter = pv.Plotter()
+plotter.add_mesh(clipped, show_edges=True, color='lightblue')
+plotter.add_mesh(grid.outline(), color='black')
+plotter.show()
