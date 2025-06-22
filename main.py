@@ -48,7 +48,7 @@ dist = mesh_hull_dist(mesh_path, convex_hull_path)
 # ! Added
 """ COMPUTE THE OFFSET SURFACE OF THE MESH USING SDF """
 
-offset_distance = dist
+offset_distance = dist * 0.7
 # Compute the offset surface of the input mesh
 offset_stl_path = offset_stl_sdf(mesh_path, offset_distance)
 
