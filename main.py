@@ -8,6 +8,8 @@ from src.convex_hull_operations import create_mesh, split_convex_hull, display_h
 # from src.split_mesh import extract_unique_vertices_from_faces, closest_distance, face_centroid
 from src.split_mesh import split_mesh_faces, display_split_faces, split_mesh_edges, display_split_edges
 from src.offset_surface_operations import offset_stl_sdf, mesh_hull_dist, display_offset_surface, split_offset_surface
+from src.merge_isolated_regions import cleanup_isolated_regions
+
 import time
 import sys
 
@@ -88,9 +90,15 @@ tri_mesh = trimesh.load(mesh_path)
 
 red_mesh, blue_mesh = split_mesh_faces(tri_mesh, tri_convex_hull, offset_mesh, d1_aligned_faces, d2_aligned_faces)
 
+display_split_faces(red_mesh, blue_mesh)
+
+""" MERGE ISOLATED REGIONS """
+
+merged_red, merged_blue = cleanup_isolated_regions(red_mesh, blue_mesh)
+
 end_time = time.time()
 print(f"Total time taken is {end_time - start_time:.2f} seconds")
 
 """ DISPLAY THE SPLIT MESHES """
 
-display_split_faces(red_mesh, blue_mesh)
+display_split_faces(merged_red, merged_blue)
