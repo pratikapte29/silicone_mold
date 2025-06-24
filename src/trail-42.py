@@ -9,7 +9,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from ortools.linear_solver import pywraplp
 
 # Step 1: Load mesh
-mesh = trimesh.load_mesh(r"/home/sumukhs-ubuntu/Desktop/silicone_mold/assets/stl/bunny.stl")
+mesh = trimesh.load_mesh(r"../assets/stl/bunny.stl")
 target_faces = 500
 reduction_fraction = 1 - (target_faces / len(mesh.faces))
 mesh = mesh.simplify_quadric_decimation(reduction_fraction)
