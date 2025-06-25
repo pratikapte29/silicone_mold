@@ -1,6 +1,7 @@
 import trimesh
 import open3d as o3d
 import numpy as np
+import open3d as o3d
 
 from src.finalize_draw_direction import FinalizeDrawDirection
 from src.convex_hull_operations import compute_convex_hull_from_stl
@@ -94,7 +95,28 @@ display_split_faces(red_mesh, blue_mesh)
 
 """ MERGE ISOLATED REGIONS """
 
+def trimesh_to_open3d(tri_mesh):
+    vertices = np.asarray(tri_mesh.vertices)
+    faces = np.asarray(tri_mesh.faces)
+    mesh_o3d = o3d.geometry.TriangleMesh()
+    mesh_o3d.vertices = o3d.utility.Vector3dVector(vertices)
+    mesh_o3d.triangles = o3d.utility.Vector3iVector(faces)
+    return mesh_o3d
+
 merged_red, merged_blue = cleanup_isolated_regions(red_mesh, blue_mesh)
+
+print("merged_red type:", type(merged_red))
+print("merged_red is_empty:", hasattr(merged_red, 'is_empty') and merged_red.is_empty)
+print("merged_red faces:", hasattr(merged_red, 'faces') and len(merged_red.faces))
+print("merged_red vertices:", hasattr(merged_red, 'vertices') and len(merged_red.vertices))
+
+print("merged_red type:", type(merged_blue))
+print("merged_red is_empty:", hasattr(merged_blue, 'is_empty') and merged_blue.is_empty)
+print("merged_red faces:", hasattr(merged_blue, 'faces') and len(merged_blue.faces))
+print("merged_red vertices:", hasattr(merged_blue, 'vertices') and len(merged_blue.vertices))
+
+merged_red.save("/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_red.stl")
+merged_blue.save("/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_blue.stl")
 
 end_time = time.time()
 print(f"Total time taken is {end_time - start_time:.2f} seconds")
