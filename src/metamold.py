@@ -6,6 +6,7 @@ Computational Design of Silicone Molds research paper.
 import trimesh
 import numpy as np
 import pyomo.environ as pyo
+from ortools.linear_solver import pywraplp
 
 mesh = trimesh.load("../assets/stl/cow.stl")
 n = len(mesh.faces)
@@ -86,8 +87,8 @@ model.direction_limit = pyo.Constraint(expr=sum(model.g[j] for j in model.DIRS) 
 model.direction_min = pyo.Constraint(expr=sum(model.g[j] for j in model.DIRS) >= 2)
 
 
-solver = pyo.SolverFactory('cbc')  # or glpk, gurobi, etc.
-solver.solve(model, tee=True)
+solver = pywraplp.Solver.CreateSolver('CBC')  # or glpk, gurobi, etc.
+solver.Solve(model, tee=True)
 
 
 face_labels = np.zeros(n, dtype=int)
