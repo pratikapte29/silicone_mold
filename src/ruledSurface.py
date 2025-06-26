@@ -5,13 +5,10 @@ from scipy.spatial import KDTree
 import trimesh
 import pyvista as pv
 import numpy as np
-import tetgen
 from trimesh import repair as tm_repair
 from trimesh.boolean import difference
 import os
 
-
-from pymeshfix import MeshFix
 
 # Force attach to log to see detailed errors (optional but helpful)
 trimesh.util.attach_to_log()
@@ -20,8 +17,6 @@ trimesh.util.attach_to_log()
 openscad_dir = "/usr/bin"
 if openscad_dir not in os.environ["PATH"]:
     os.environ["PATH"] += os.pathsep + openscad_dir
-
-
 
 
 def create_ruled_surface_mesh(inner_points, outer_points):
@@ -164,7 +159,7 @@ def visualize_delaunay_and_boundary(delaunay_surface, boundary_points_sorted):
     Visualize the Delaunay surface and sorted boundary points.
     """
     plotter = pv.Plotter()
-    plotter.add_mesh(delaunay_surface, color='cyan', show_edges=True, opacity=0.7, label='Delaunay Surface')
+    plotter.add_mesh(delaunay_surface, color='cyan', show_edges=True, opacity=1, label='Delaunay Surface')
     
     if len(boundary_points_sorted) > 0:
         boundary_polydata = pv.PolyData(boundary_points_sorted)
@@ -184,10 +179,10 @@ def visualize_final_ruled_surface(delaunay_surface, ruled_surface, boundary_poin
     plotter = pv.Plotter()
     
     # Add Delaunay surface
-    plotter.add_mesh(delaunay_surface, color='cyan', opacity=0.7, show_edges=True, label='Delaunay Surface')
+    plotter.add_mesh(delaunay_surface, color='cyan', opacity=1, show_edges=True, label='Delaunay Surface')
     
     # Add ruled surface
-    plotter.add_mesh(ruled_surface, color='lightblue', opacity=0.8, show_edges=True, label='Ruled Surface')
+    plotter.add_mesh(ruled_surface, color='lightblue', opacity=1, show_edges=True, label='Ruled Surface')
     
     # Add boundary points
     if len(boundary_points_sorted) > 0:
@@ -216,7 +211,7 @@ def find_common_points(vertices1, vertices2, tolerance=1e-6):
 
 def visualize_combined_surface(combined_surface):
     plotter = pv.Plotter()
-    plotter.add_mesh(combined_surface, color='orange', opacity=0.8, show_edges=True, label='Combined Surface')
+    plotter.add_mesh(combined_surface, color='orange', opacity=1, show_edges=True, label='Combined Surface')
     plotter.add_legend()
     plotter.show_axes()
     plotter.set_background('white')
@@ -224,59 +219,21 @@ def visualize_combined_surface(combined_surface):
     plotter.show()
 
 
-
-def repair_with_meshfix(surf):
-    """
-    Use PyMeshFix to repair self-intersections,
-    non-manifold edges, duplicate faces, holes, etc.
-    """
-    # Dump to numpy arrays
-    pts   = surf.points
-    faces = surf.faces.reshape(-1,4)[:,1:]
-    # Run MeshFix
-    mf = MeshFix(pts, faces)
-    mf.repair(verbose=False)
-    # Reconstruct a clean PyVista surface
-    clean_faces = mf.faces
-    clean_pts   = mf.v
-    # Prepend the '3' for each triangle for PyVista format
-    faces_flat = (np.hstack([
-        np.full((len(clean_faces),1), 3, dtype=int),
-        clean_faces
-    ])).ravel()
-    return pv.PolyData(clean_pts, faces_flat)
-
-def tetrahedralize_with_tetgen(surface, switches="q1.2Yp"):
-    """
-    - Repair the input surface with MeshFix  
-    - Call TetGen with a clean switch string  
-    Returns a PyVista UnstructuredGrid of tets.
-    """
-    # 1) Repair to get a fully manifold, hole-free shell
-    surf = repair_with_meshfix(surface)
-    # 2) Prepare TetGen
-    pts   = surf.points
-    faces = surf.faces.reshape(-1,4)[:,1:]
-    tg = tetgen.TetGen(pts, faces)
-    # 3) Tetrahedralize
-    #    p → PLC (preserve facets), q1.2 → quality, Y → no splitting of facets
-    tg.tetrahedralize(order=1, switches=f"p{switches}")
-    return pv.wrap(tg.grid)
-
 def pv_to_trimesh(pv_mesh):
     faces = pv_mesh.faces.reshape((-1, 4))[:, 1:]
     return trimesh.Trimesh(vertices=pv_mesh.points, faces=faces)
+
 
 def trimesh_to_pyvista(tm):
     return pv.PolyData(tm.vertices, np.hstack([np.full((len(tm.faces), 1), 3), tm.faces]))
 
 
 def main():
-    file1 = "/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_blue.stl"
-    file2 = "/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_red.stl"
-    file3 = "/home/sumukhs-ubuntu/Desktop/silicone_mold/assets/stl/bunny.stl"
+    file1 = "../merged_blue.stl"
+    file2 = "../merged_red.stl"
+    file3 = "../assets/stl/bunny.stl"
 
-    mesh1    = pv.read(file1)
+    mesh1 = pv.read(file1)
     centroid = mesh1.center
     bunny_mesh = pv.read(file3)
 
@@ -324,6 +281,11 @@ def main():
     combined_surface.save('combined_parting_surface.vtk')
     print("Combined surface saved successfully.")
     visualize_combined_surface(combined_surface)
+
+    combined_surface = pv.PolyData(combined_surface)
+    bunny_mesh = pv.PolyData(bunny_mesh)
+    clipped = combined_surface.clip_surface(bunny_mesh, invert=False)
+    visualize_combined_surface(clipped)
 
     print("Clipping combined surface with bunny mesh...")
     try:
