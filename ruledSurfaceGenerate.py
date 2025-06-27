@@ -39,23 +39,60 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     """
     # Get centroid of red mesh
     centroid = red_mesh.centroid
+    pyvista_mesh = trimesh_to_pyvista(red_mesh)
+
     
     # Get boundary/edge vertices
     try:
         # Get boundary edges
-        boundary_edges = red_mesh.outline()
+        boundary_edges = pyvista_mesh.extract_feature_edges(boundary_edges=True,
+                                                         non_manifold_edges=False, 
+                                                         feature_edges=False,
+                                                           manifold_edges=False)
         if boundary_edges is not None:
-            boundary_points = boundary_edges.vertices
+            boundary_points = boundary_edges.points
+            boundary_points_array = np.array(boundary_points)
         else:
             # Fallback: use convex hull vertices
             hull = red_mesh.convex_hull
             boundary_points = hull.vertices
+            boundary_points_array = np.array(boundary_points)
+            print("No boundary edges found, using convex hull vertices.")
     except:
         # Final fallback: use all vertices
         boundary_points = red_mesh.vertices
+    edge_points_list = []
+    boundary_points_sorted = []
     
+    for i in range(boundary_edges.n_cells):
+        edge = boundary_edges.get_cell(i)  # Get the i-th edge
+        edge_points = edge.points  # Get the points of the edge
+
+        # Append the two points as a list
+        edge_points_list.append(edge_points[:2])
+    
+    edge_points_array = np.array(edge_points_list)
+    boundary_points_array = boundary_points_array.tolist()
+    edge_points_array = edge_points_array.tolist()
+
+    boundary_points_sorted.append(boundary_points_array[0]) 
+    remaining_edges = edge_points_array.copy()
+
+
+    while len(boundary_points_sorted) < len(boundary_points):
+        last_node = boundary_points_sorted[-1]
+        for edge in remaining_edges[:]:
+            if edge[0] == last_node and edge[1] not in boundary_points_sorted:
+                boundary_points_sorted.append(edge[1])
+                remaining_edges.remove(edge)
+                break
+            elif edge[1] == last_node and edge[0] not in boundary_points_sorted:
+                boundary_points_sorted.append(edge[0])
+                remaining_edges.remove(edge)
+                break
+    boundary_points_sorted.append(boundary_points_sorted[0])
     # Calculate vectors from centroid to each boundary vertex
-    vectors_to_vertices = boundary_points - centroid
+    vectors_to_vertices = boundary_points_sorted - centroid
     
     # Normalize blue direction
     blue_direction_normalized = blue_draw_direction / np.linalg.norm(blue_draw_direction)
@@ -64,41 +101,62 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     projections = np.dot(vectors_to_vertices, blue_direction_normalized)
     
     # Find the maximum projection distance (absolute value)
-    max_distance = np.max(np.abs(projections))
+    #maximum projection length of any boundary point from the centroid
+    max_distance = np.max(np.abs(projections))*0.5
     
     print(f"Centroid: {centroid}")
     print(f"Max extension distance: {max_distance}")
     print(f"Number of boundary points: {len(boundary_points)}")
     
-    return max_distance, centroid, boundary_points
+    return max_distance, centroid, boundary_points_sorted
 
-def step3_create_projection_plane(centroid, blue_draw_direction, max_distance, extension_factor=0.1):
+def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_distance, extension_factor=0.1):
     """
-    Step 3: Create a plane with its normal aligned to blue draw direction and origin 
+    Step 3: Create a plane with its normal aligned to the average face normal and origin
     will be the centroid translated to the max dist + some 10%
     
     Args:
         centroid (np.array): Centroid of the red mesh
-        blue_draw_direction (np.array): Blue draw direction vector
+        mesh_faces (np.array): Array of face indices (Nx3)
+        mesh_vertices (np.array): Array of vertex coordinates (Mx3)
         max_distance (float): Maximum extension distance from step 2
         extension_factor (float): Additional extension factor (default 10%)
-    
+        
     Returns:
         tuple: (plane_origin, plane_normal)
     """
-    # Normalize the blue draw direction
-    plane_normal = blue_draw_direction / np.linalg.norm(blue_draw_direction)
+    # Initialize sum of normals
+    normal_sum = np.zeros(3)
+    mesh_faces[:, [1, 2]] = mesh_faces[:, [2, 1]]
     
-    # Calculate plane origin - centroid translated by max_distance + 10%
+    # Iterate over all faces and sum their normals
+    for face in mesh_faces:
+        # Get the three vertices of the face
+        v0 = mesh_vertices[face[0]]
+        v1 = mesh_vertices[face[1]]
+        v2 = mesh_vertices[face[2]]
+        
+        # Calculate face normal using cross product
+        edge1 = v1 - v0
+        edge2 = v2 - v0
+        face_normal = np.cross(edge1, edge2)
+        
+        # Add to sum (we'll normalize later)
+        normal_sum += face_normal
+    
+    # Find the unit normal (average normal direction)
+    plane_normal = normal_sum / np.linalg.norm(normal_sum)
+    
+    # Calculate plane origin - centroid translated by max_distance + extension factor
     translation_distance = max_distance * (1 + extension_factor)
     plane_origin = centroid + plane_normal * translation_distance
     
     print(f"Plane origin: {plane_origin}")
     print(f"Plane normal: {plane_normal}")
     print(f"Translation distance: {translation_distance}")
+    print(f"Number of faces processed: {len(mesh_faces)}")
     
     return plane_origin, plane_normal
-
 
 def step4_project_points_on_plane(boundary_points, plane_origin, plane_normal):
     """
@@ -185,7 +243,7 @@ def step5_create_ruled_surface(boundary_points, projected_points):
     return ruled_surface
 
 def visualize_ruled_surface_process(boundary_points, projected_points, ruled_surface, 
-                                   plane_origin, plane_normal, centroid,red_mesh):
+                                   plane_origin, plane_normal, centroid,red_mesh,merged_red):
     """
     Visualization function to see the entire process
     
@@ -206,6 +264,9 @@ def visualize_ruled_surface_process(boundary_points, projected_points, ruled_sur
     if red_mesh is not None:
         plotter.add_mesh(red_mesh, color='lightblue', opacity=1, 
                         show_edges=True, label='Ruled Surface')
+    if merged_red is not None:
+        plotter.add_mesh(merged_red, color='red', opacity=1, 
+                        show_edges=True, label='Merged Red ')
     
     # Add boundary points
     if len(boundary_points) > 0:
@@ -249,6 +310,7 @@ def main(mesh_path, draw_direction):
     # Load the mesh
     try:
         red_mesh = trimesh.load(mesh_path)
+        merged_red = trimesh.load(r'/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_red.stl')
     except Exception as e:
         print(f"Error loading mesh: {e}")
         return
@@ -262,7 +324,12 @@ def main(mesh_path, draw_direction):
     
     # Step 3: Create projection plane
     plane_origin, plane_normal = step3_create_projection_plane(
-        centroid, blue_draw_direction, max_distance)
+        centroid=centroid,
+        mesh_faces=red_mesh.faces, 
+        mesh_vertices=red_mesh.vertices,
+        max_distance=max_distance,
+        extension_factor=0.01  # optional, defaults to 0.1
+)
     
     # Step 4: Project boundary points onto plane
     projected_points = step4_project_points_on_plane(
@@ -274,7 +341,7 @@ def main(mesh_path, draw_direction):
     # Visualize the process
     visualize_ruled_surface_process(
         boundary_points, projected_points, ruled_surface, 
-        plane_origin, plane_normal, centroid,red_mesh)
+        plane_origin, plane_normal, centroid,red_mesh,merged_red)
 
 # Example usage
 if __name__ == "__main__":
