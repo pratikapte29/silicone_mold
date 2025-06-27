@@ -227,11 +227,16 @@ def pv_to_trimesh(pv_mesh):
 def trimesh_to_pyvista(tm):
     return pv.PolyData(tm.vertices, np.hstack([np.full((len(tm.faces), 1), 3), tm.faces]))
 
+def combine_and_triangulate_surfaces(surface1, surface2):
+    combined = surface1 + surface2
+    triangulated = combined.triangulate()
+    return triangulated
+
 
 def main():
-    file1 = "../merged_blue.stl"
-    file2 = "../merged_red.stl"
-    file3 = "../assets/stl/bunny.stl"
+    file1 = r"merged_blue.stl"
+    file2 = "merged_red.stl"
+    file3 = r"/home/sumukhs-ubuntu/Desktop/silicone_mold/assets/stl/bunny.stl"
 
     mesh1 = pv.read(file1)
     centroid = mesh1.center
@@ -278,7 +283,7 @@ def main():
 
     combined_surface = delaunay_surface + ruled_surface
     combined_surface = combined_surface.triangulate()
-    combined_surface.save('combined_parting_surface.vtk')
+    combined_surface.save('combined_parting_surface.stl')
     print("Combined surface saved successfully.")
     visualize_combined_surface(combined_surface)
 
