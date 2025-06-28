@@ -5,6 +5,8 @@ import pyvista as pv
 from src.ruledSurface import trimesh_to_pyvista, combine_and_triangulate_surfaces
 
 from scipy.spatial import Delaunay
+
+
 def step1_get_draw_directions(draw_direction):
     """
     Step 1: Get the draw directions from your existing pipeline

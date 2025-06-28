@@ -9,6 +9,13 @@ from trimesh import repair as tm_repair
 from trimesh.boolean import difference
 import os
 
+"""
+1. Creates delaunay triangulation of the common points between two STL files.
+2. Sorts the boundary points of the Delaunay triangulation.
+3. Translates the sorted points outward by a fixed distance.
+4. Creates a ruled surface mesh between the sorted boundary points and their translated counterparts.
+5. Combines the Delaunay surface and ruled surface into a single mesh.
+"""
 
 # Force attach to log to see detailed errors (optional but helpful)
 trimesh.util.attach_to_log()
@@ -172,6 +179,7 @@ def visualize_delaunay_and_boundary(delaunay_surface, boundary_points_sorted):
     plotter.add_title('Delaunay Surface with Sorted Boundary Points')
     plotter.show()
 
+
 def visualize_final_ruled_surface(delaunay_surface, ruled_surface, boundary_points_sorted, expanded_points):
     """
     Visualize the final result with Delaunay surface and ruled surface.
@@ -200,6 +208,7 @@ def visualize_final_ruled_surface(delaunay_surface, ruled_surface, boundary_poin
     plotter.add_title('Complete Ruled Surface with Delaunay Base')
     plotter.show()
 
+
 def find_common_points(vertices1, vertices2, tolerance=1e-6):
     """Find common points between two sets of vertices"""
     common_points = []
@@ -208,6 +217,7 @@ def find_common_points(vertices1, vertices2, tolerance=1e-6):
         if np.min(distances) < tolerance:
             common_points.append(v1)
     return np.array(common_points) if common_points else np.array([]).reshape(0, 3)
+
 
 def visualize_combined_surface(combined_surface):
     plotter = pv.Plotter()
@@ -227,13 +237,14 @@ def pv_to_trimesh(pv_mesh):
 def trimesh_to_pyvista(tm):
     return pv.PolyData(tm.vertices, np.hstack([np.full((len(tm.faces), 1), 3), tm.faces]))
 
+
 def combine_and_triangulate_surfaces(surface1, surface2):
     combined = surface1 + surface2
     triangulated = combined.triangulate()
     return triangulated
 
 
-def main():
+def ruledSurface(file1, file2, file3):
     file1 = r"merged_blue.stl"
     file2 = "merged_red.stl"
     file3 = r"/home/sumukhs-ubuntu/Desktop/silicone_mold/assets/stl/bunny.stl"
@@ -287,31 +298,3 @@ def main():
     print("Combined surface saved successfully.")
     visualize_combined_surface(combined_surface)
 
-    combined_surface = pv.PolyData(combined_surface)
-    bunny_mesh = pv.PolyData(bunny_mesh)
-    clipped = combined_surface.clip_surface(bunny_mesh, invert=False)
-    visualize_combined_surface(clipped)
-
-    print("Clipping combined surface with bunny mesh...")
-    try:
-        # Convert PyVista meshes to Trimesh
-        tm_combined = pv_to_trimesh(combined_surface)
-        tm_bunny = pv_to_trimesh(bunny_mesh)
-
-        # Perform boolean difference
-        result = difference([tm_bunny, tm_combined], engine='blender', check_volume=False)
-        if result is None:
-            print("Boolean operation failed. Check mesh watertightness.")
-            return
-
-        # Convert back to PyVista for visualization/export
-        result_pv = trimesh_to_pyvista(result)
-        result_pv.save("clipped_with_bunny.vtk")
-        print("Clipped surface saved successfully.")
-        visualize_combined_surface(result_pv)
-
-    except Exception as e:
-        print(f"Clipping with bunny mesh failed: {e}")
-
-if __name__ == "__main__":
-    main()
