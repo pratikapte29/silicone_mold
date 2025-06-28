@@ -245,13 +245,21 @@ def combine_and_triangulate_surfaces(surface1, surface2):
 
 
 def ruledSurface(file1, file2, file3):
-    file1 = r"merged_blue.stl"
-    file2 = "merged_red.stl"
-    file3 = r"/home/sumukhs-ubuntu/Desktop/silicone_mold/assets/stl/bunny.stl"
 
     mesh1 = pv.read(file1)
     centroid = mesh1.center
-    bunny_mesh = pv.read(file3)
+    input_mesh = pv.read(file3)
+
+    # calculate the bounds of input mesh
+    bounds = input_mesh.bounds
+    x_dim = bounds[1] - bounds[0]
+    y_dim = bounds[3] - bounds[2]
+    z_dim = bounds[5] - bounds[4]
+
+    largest_dimension = max(x_dim, y_dim, z_dim)
+
+    # Calculate 10% of the largest dimension
+    dist = 0.15 * largest_dimension
 
     v1 = load_stl_vertices(file1)
     v2 = load_stl_vertices(file2)
@@ -276,13 +284,23 @@ def ruledSurface(file1, file2, file3):
     visualize_delaunay_and_boundary(delaunay_surface, boundary_pts)
 
     print("Translating sorted points...")
-    expanded_pts = expand_points_by_translation(boundary_pts, centroid, 500)
+    expanded_pts = expand_points_by_translation(boundary_pts, centroid, dist)
 
     print("Creating ruled surface...")
+
+    input_file_name = os.path.splitext(os.path.basename(file3))[0]
+    results_dir = os.path.join("results", input_file_name)
+    os.makedirs(results_dir, exist_ok=True)
+
+    # saving paths
+    delaunay_surface_path = os.path.join(results_dir, 'delaunay_surface.vtk')
+    ruled_surface_path = os.path.join(results_dir, "ruled_surface.vtk")
+    combined_surface_path = os.path.join(results_dir, "combined_parting_surface.stl")
+
     try:
         ruled_surface = create_ruled_surface_mesh(boundary_pts, expanded_pts)
-        delaunay_surface.save('delaunay_surface.vtk')
-        ruled_surface.save('ruled_surface.vtk')
+        delaunay_surface.save(delaunay_surface_path)
+        ruled_surface.save(ruled_surface_path)
         print("Surfaces saved successfully.")
         visualize_final_ruled_surface(delaunay_surface,
                                       ruled_surface,
@@ -294,7 +312,7 @@ def ruledSurface(file1, file2, file3):
 
     combined_surface = delaunay_surface + ruled_surface
     combined_surface = combined_surface.triangulate()
-    combined_surface.save('combined_parting_surface.stl')
+    combined_surface.save(combined_surface_path)
     print("Combined surface saved successfully.")
     visualize_combined_surface(combined_surface)
 

@@ -113,4 +113,6 @@ print(f"Total time taken is {end_time - start_time:.2f} seconds")
 display_split_faces(merged_red, merged_blue)
 
 """ CREATE RULED SURFACE AND THE COMBINED PARTING SURFACE """
-ruledSurface()
+ruledSurface(
+    merged_blue_path, merged_red_path, mesh_path
+)
