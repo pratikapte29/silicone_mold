@@ -118,10 +118,15 @@ ruledSurface(
     merged_blue_path, merged_red_path, mesh_path
 )
 
-""" GENERATE THE METAMOLD HALVES """
+""" GENERATE THE METAMOLD HALVES WITH AUTOMATIC HALF SELECTION """
 
 combined_mesh_path = os.path.join(results_dir, "combined_parting_surface.stl")
 
+# Updated function call with both mesh halves - the function will automatically select the correct one
 generate_metamold(
-    combined_mesh_path, merged_blue_path, draw_direction
+    combined_mesh_path, merged_red_path, merged_blue_path, draw_direction
 )
+
+print("=== PIPELINE COMPLETED SUCCESSFULLY ===")
+print(f"Results saved in: {results_dir}")
+print(f"Metamold generated with automatic half selection and flat bottom surface")
