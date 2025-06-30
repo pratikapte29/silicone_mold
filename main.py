@@ -11,6 +11,7 @@ from src.split_mesh import split_mesh_faces, display_split_faces, split_mesh_edg
 from src.offset_surface_operations import offset_stl_sdf, mesh_hull_dist, display_offset_surface, split_offset_surface
 from src.merge_isolated_regions import cleanup_isolated_regions
 from src.ruledSurface import ruledSurface
+from src.generate_metamold import generate_metamold
 
 import time
 import sys
@@ -115,4 +116,12 @@ display_split_faces(merged_red, merged_blue)
 """ CREATE RULED SURFACE AND THE COMBINED PARTING SURFACE """
 ruledSurface(
     merged_blue_path, merged_red_path, mesh_path
+)
+
+""" GENERATE THE METAMOLD HALVES """
+
+combined_mesh_path = os.path.join(results_dir, "combined_parting_surface.stl")
+
+generate_metamold(
+    combined_mesh_path, merged_blue_path, draw_direction
 )

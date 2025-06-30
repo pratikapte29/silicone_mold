@@ -349,56 +349,48 @@ def trimesh_to_pvpoly(tri_mesh):
                        np.hstack((np.full((len(tri_mesh.faces), 1), 3), tri_mesh.faces)))
 
 
-def main(mesh_path, draw_direction):
+def generate_metamold(mesh_path, mold_half_path, draw_direction):
     """
     Main function to create and visualize a ruled surface from a mesh and draw direction.
-    
+
     Args:
-        mesh_path (str): Path to the input mesh file
+        mesh_path (str): combined surface mesh
+        mold_half_path (str): Path to the mold half mesh (merged_red / merged_blue)
         draw_direction (np.array): The draw direction vector [x, y, z]
     """
     # Load the mesh
     try:
         red_mesh = trimesh.load(mesh_path)
-        merged_red = trimesh.load(r'/home/sumukhs-ubuntu/Desktop/silicone_mold/merged_blue.stl')
+        merged_red = trimesh.load(mold_half_path)
     except Exception as e:
         print(f"Error loading mesh: {e}")
         return
-    
+
     # Step 1: Get draw directions
     red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction)
-    
+
     # Step 2: Calculate max extension distance and get boundary points
     max_distance, centroid, boundary_points = step2_calculate_max_extension_distance(
         red_mesh, red_draw_direction)
-    
+
     # Step 3: Create projection plane
     plane_origin, plane_normal = step3_create_projection_plane(
         centroid=centroid,
-        mesh_faces=red_mesh.faces, 
+        mesh_faces=red_mesh.faces,
         mesh_vertices=red_mesh.vertices,
         max_distance=max_distance,
         extension_factor=0.01  # optional, defaults to 0.1
 )
-    
+
     # Step 4: Project boundary points onto plane
     projected_points = step4_project_points_on_plane(
         boundary_points, plane_origin, plane_normal)
-    
+
     projected_mesh = bottom_surface(projected_points)
     # Step 5: Create ruled surface
     ruled_surface = step5_create_ruled_surface(boundary_points, projected_points)
-    
+
     # Visualize the process
     visualize_ruled_surface_process(
-        boundary_points, projected_points, ruled_surface, 
+        boundary_points, projected_points, ruled_surface,
         plane_origin, plane_normal, centroid,red_mesh,merged_red,projected_mesh)
-    
-
-# Example usage
-if __name__ == "__main__":
-    # Example mesh path and draw direction
-    example_mesh_path = r"/home/sumukhs-ubuntu/Desktop/silicone_mold/combined_parting_surface.stl"  # Replace with actual mesh path
-    example_draw_direction = np.array([0.0, 0.0, 1.0])  # Example: along z-axis
-    
-    main(example_mesh_path, example_draw_direction)
