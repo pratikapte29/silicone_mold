@@ -43,7 +43,6 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     centroid = red_mesh.centroid
     pyvista_mesh = trimesh_to_pyvista(red_mesh)
 
-
     # Get boundary/edge vertices
     try:
         # Get boundary edges
@@ -80,7 +79,6 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     boundary_points_sorted.append(boundary_points_array[0])
     remaining_edges = edge_points_array.copy()
 
-
     while len(boundary_points_sorted) < len(boundary_points):
         last_node = boundary_points_sorted[-1]
         for edge in remaining_edges[:]:
@@ -103,14 +101,15 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     projections = np.dot(vectors_to_vertices, blue_direction_normalized)
 
     # Find the maximum projection distance (absolute value)
-    #maximum projection length of any boundary point from the centroid
-    max_distance = np.max(np.abs(projections))*0.5
+    # maximum projection length of any boundary point from the centroid
+    max_distance = np.max(np.abs(projections)) * 0.5
 
     print(f"Centroid: {centroid}")
     print(f"Max extension distance: {max_distance}")
     print(f"Number of boundary points: {len(boundary_points)}")
 
     return max_distance, centroid, boundary_points_sorted
+
 
 def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_distance, extension_factor=0.1):
     """
@@ -159,6 +158,7 @@ def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_dista
     print(f"Number of faces processed: {len(mesh_faces)}")
 
     return plane_origin, plane_normal
+
 
 def step4_project_points_on_plane(boundary_points, plane_origin, plane_normal):
     """
@@ -257,7 +257,7 @@ def bottom_surface(projected_points):
 
 
 def visualize_ruled_surface_process(boundary_points, projected_points, ruled_surface,
-                                    plane_origin, plane_normal, centroid,red_mesh,merged_red,projected_mesh):
+                                    plane_origin, plane_normal, centroid, red_mesh, merged_red, projected_mesh):
     """
     Visualization function to see the entire process
 
@@ -287,17 +287,16 @@ def visualize_ruled_surface_process(boundary_points, projected_points, ruled_sur
 
     # Add boundary points
     if len(boundary_points) > 0:
-        plotter.add_mesh(pv.PolyData(boundary_points), color='lightblue', point_size=8,opacity=1,
+        plotter.add_mesh(pv.PolyData(boundary_points), color='lightblue', point_size=8, opacity=1,
                          render_points_as_spheres=True, label='Boundary Points')
 
     # Add projected points
     if len(projected_points) > 0:
-        plotter.add_mesh(pv.PolyData(projected_points), color='red', point_size=8,opacity=1,
+        plotter.add_mesh(pv.PolyData(projected_points), color='red', point_size=8, opacity=1,
                          render_points_as_spheres=True, label='Projected Points')
 
-
     # Add centroid
-    plotter.add_mesh(pv.PolyData(centroid.reshape(1, -1)), color='lightblue', point_size=12,opacity=1,
+    plotter.add_mesh(pv.PolyData(centroid.reshape(1, -1)), color='lightblue', point_size=12, opacity=1,
                      render_points_as_spheres=True, label='Centroid')
 
     # Create plane for visualization
@@ -327,22 +326,22 @@ def visualize_ruled_surface_process(boundary_points, projected_points, ruled_sur
             if isinstance(mesh, pv.PolyData):
                 combined += mesh
 
-
     if len(boundary_points) > 0:
         combined += pv.PolyData(boundary_points)
 
     if len(projected_points) > 0:
         combined += pv.PolyData(projected_points)
 
-    #combined += pv.PolyData(centroid.reshape(1, -1))
+    # combined += pv.PolyData(centroid.reshape(1, -1))
 
     # Save to file
-    #try:
-    #save_path = 'combined_ruled_surface_blue.stl'  # Change to desired output path
-    #combined.save(save_path)
-    #print(f"[INFO] Combined mesh saved to: {save_path}")
-    #except Exception as e:
-    #print(f"[ERROR] Could not save combined mesh: {e}")
+    # try:
+    # save_path = 'combined_ruled_surface_blue.stl'  # Change to desired output path
+    # combined.save(save_path)
+    # print(f"[INFO] Combined mesh saved to: {save_path}")
+    # except Exception as e:
+    # print(f"[ERROR] Could not save combined mesh: {e}")
+
 
 def trimesh_to_pvpoly(tri_mesh):
     return pv.PolyData(tri_mesh.vertices,
@@ -393,4 +392,4 @@ def generate_metamold(mesh_path, mold_half_path, draw_direction):
     # Visualize the process
     visualize_ruled_surface_process(
         boundary_points, projected_points, ruled_surface,
-        plane_origin, plane_normal, centroid,red_mesh,merged_red,projected_mesh)
+        plane_origin, plane_normal, centroid, red_mesh, merged_red, projected_mesh)
