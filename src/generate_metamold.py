@@ -111,7 +111,7 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
     return max_distance, centroid, boundary_points_sorted
 
 
-def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_distance, extension_factor=0.1):
+def step3_create_projection_plane_red(centroid, mesh_faces, mesh_vertices, max_distance, extension_factor=0.15):
     """
     Step 3: Create a plane with its normal aligned to the average face normal and origin
     will be the centroid translated to the max dist + some 10%
@@ -149,7 +149,7 @@ def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_dista
     plane_normal = normal_sum / np.linalg.norm(normal_sum)
 
     # Calculate plane origin - centroid translated by max_distance + extension factor
-    translation_distance = max_distance * (1 + extension_factor)
+    translation_distance = max_distance * (1.5 + extension_factor)
     plane_origin = centroid + plane_normal * translation_distance
 
     print(f"Plane origin: {plane_origin}")
@@ -158,6 +158,55 @@ def step3_create_projection_plane(centroid, mesh_faces, mesh_vertices, max_dista
     print(f"Number of faces processed: {len(mesh_faces)}")
 
     return plane_origin, plane_normal
+
+def step3_create_projection_plane_blue(centroid, mesh_faces, mesh_vertices, max_distance, extension_factor=0.15):
+    """
+    Step 3: Create a plane with its normal aligned to the average face normal and origin
+    will be the centroid translated to the max dist + some 10%
+
+    Args:
+        centroid (np.array): Centroid of the red mesh
+        mesh_faces (np.array): Array of face indices (Nx3)
+        mesh_vertices (np.array): Array of vertex coordinates (Mx3)
+        max_distance (float): Maximum extension distance from step 2
+        extension_factor (float): Additional extension factor (default 10%)
+
+    Returns:
+        tuple: (plane_origin, plane_normal)
+    """
+    # Initialize sum of normals
+    normal_sum = np.zeros(3)
+    mesh_faces[:, [1, 2]] = mesh_faces[:, [2, 1]]
+
+    # Iterate over all faces and sum their normals
+    for face in mesh_faces:
+        # Get the three vertices of the face
+        v0 = mesh_vertices[face[0]]
+        v1 = mesh_vertices[face[1]]
+        v2 = mesh_vertices[face[2]]
+
+        # Calculate face normal using cross product
+        edge1 = v1 - v0
+        edge2 = v2 - v0
+        face_normal = np.cross(edge1, edge2)
+
+        # Add to sum (we'll normalize later)
+        normal_sum += face_normal
+
+    # Find the unit normal (average normal direction)
+    plane_normal = normal_sum / np.linalg.norm(normal_sum)
+
+    # Calculate plane origin - centroid translated by max_distance + extension factor
+    translation_distance = - max_distance * (1.5 + extension_factor)
+    plane_origin = centroid + plane_normal * translation_distance
+
+    print(f"Plane origin: {plane_origin}")
+    print(f"Plane normal: {plane_normal}")
+    print(f"Translation distance: {translation_distance}")
+    print(f"Number of faces processed: {len(mesh_faces)}")
+
+    return plane_origin, plane_normal
+
 
 
 def step4_project_points_on_plane(boundary_points, plane_origin, plane_normal):
@@ -348,7 +397,54 @@ def trimesh_to_pvpoly(tri_mesh):
                        np.hstack((np.full((len(tri_mesh.faces), 1), 3), tri_mesh.faces)))
 
 
-def generate_metamold(mesh_path, mold_half_path, draw_direction):
+def generate_metamold_red(mesh_path, mold_half_path, draw_direction):
+    """
+    Main function to create and visualize a ruled surface from a mesh and draw direction.
+
+    Args:
+        mesh_path (str): combined surface mesh
+        mold_half_path (str): Path to the mold half mesh (merged_red / merged_blue)
+        draw_direction (np.array): The draw direction vector [x, y, z]
+    """
+    # Load the mesh
+    try:
+        red_mesh = trimesh.load(mesh_path)
+        merged_red = trimesh.load(mold_half_path)
+    except Exception as e:
+        print(f"Error loading mesh: {e}")
+        return
+
+    # Step 1: Get draw directions
+    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction)
+
+    # Step 2: Calculate max extension distance and get boundary points
+    max_distance, centroid, boundary_points = step2_calculate_max_extension_distance(
+        red_mesh, blue_draw_direction)
+
+    # Step 3: Create projection plane
+    plane_origin, plane_normal = step3_create_projection_plane_red(
+        centroid=centroid,
+        mesh_faces=red_mesh.faces,
+        mesh_vertices=red_mesh.vertices,
+        max_distance=max_distance,
+        extension_factor=0.01  # optional, defaults to 0.1
+    )
+
+    # Step 4: Project boundary points onto plane
+    projected_points = step4_project_points_on_plane(
+        boundary_points, plane_origin, plane_normal)
+
+    projected_mesh = bottom_surface(projected_points)
+    # Step 5: Create ruled surface
+    ruled_surface = step5_create_ruled_surface(boundary_points, projected_points)
+
+    # Visualize the process
+    visualize_ruled_surface_process(
+        boundary_points, projected_points, ruled_surface,
+        plane_origin, plane_normal, centroid, red_mesh, merged_red, projected_mesh)
+
+
+def generate_metamold_blue(mesh_path, mold_half_path, draw_direction):
     """
     Main function to create and visualize a ruled surface from a mesh and draw direction.
 
@@ -373,12 +469,12 @@ def generate_metamold(mesh_path, mold_half_path, draw_direction):
         red_mesh, red_draw_direction)
 
     # Step 3: Create projection plane
-    plane_origin, plane_normal = step3_create_projection_plane(
+    plane_origin, plane_normal = step3_create_projection_plane_blue(
         centroid=centroid,
         mesh_faces=red_mesh.faces,
         mesh_vertices=red_mesh.vertices,
         max_distance=max_distance,
-        extension_factor=0.01  # optional, defaults to 0.1
+        extension_factor=0.1  # optional, defaults to 0.1
     )
 
     # Step 4: Project boundary points onto plane
