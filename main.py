@@ -123,5 +123,5 @@ ruledSurface(
 combined_mesh_path = os.path.join(results_dir, "combined_parting_surface.stl")
 
 generate_metamold(
-    combined_mesh_path, merged_blue_path, draw_direction
+    combined_mesh_path, merged_red_path, draw_direction
 )
