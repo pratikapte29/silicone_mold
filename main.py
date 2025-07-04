@@ -13,7 +13,7 @@ from src.merge_isolated_regions import cleanup_isolated_regions
 from src.ruledSurface import ruledSurface
 from src.generate_metamold import generate_metamold_red
 from src.generate_metamold import generate_metamold_blue
-
+from src.generate_metamold import retracted_projected_points
 import time
 import sys
 import os
@@ -127,5 +127,8 @@ generate_metamold_red(
     combined_mesh_path, merged_red_path, draw_direction
 )
 generate_metamold_blue(
+    combined_mesh_path, merged_blue_path, draw_direction
+)
+retracted_projected_points(
     combined_mesh_path, merged_blue_path, draw_direction
 )
