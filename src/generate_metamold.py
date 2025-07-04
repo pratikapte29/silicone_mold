@@ -102,7 +102,7 @@ def step2_calculate_max_extension_distance(red_mesh, blue_draw_direction):
 
     # Find the maximum projection distance (absolute value)
     # maximum projection length of any boundary point from the centroid
-    max_distance = np.max(np.abs(projections)) * 0.5
+    max_distance = np.max(np.abs(projections))
 
     print(f"Centroid: {centroid}")
     print(f"Max extension distance: {max_distance}")
