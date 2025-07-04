@@ -7,20 +7,38 @@ from src.ruledSurface import trimesh_to_pyvista, combine_and_triangulate_surface
 from scipy.spatial import Delaunay
 
 
-def step1_get_draw_directions(draw_direction):
+def step1_get_draw_directions(draw_direction, merged_red_mesh):
     """
-    Step 1: Get the draw directions from your existing pipeline
+    Step 1: Get the draw directions based on merged_red mesh normal alignment
 
     Args:
-        draw_direction (np.array): The draw direction from your main pipeline
+        draw_direction (np.array): The original draw direction from pipeline
+        merged_red_mesh (trimesh.Trimesh): The merged red mesh
 
     Returns:
         tuple: (red_draw_direction, blue_draw_direction)
     """
-    # Use the computed draw direction and its opposite
-    red_draw_direction = np.array(draw_direction)
-    blue_draw_direction = -np.array(draw_direction)  # Opposite direction
+    # Calculate average face normal of merged_red mesh
+    red_face_normals = merged_red_mesh.face_normals
+    red_avg_normal = np.mean(red_face_normals, axis=0)
+    red_avg_normal = red_avg_normal / np.linalg.norm(red_avg_normal)
 
+    # Normalize original draw direction
+    draw_direction_normalized = draw_direction / np.linalg.norm(draw_direction)
+
+    # Check alignment using dot product
+    alignment = np.dot(red_avg_normal, draw_direction_normalized)
+
+    # If alignment is positive, use original direction for red
+    # If alignment is negative, use opposite direction for red
+    if alignment > 0:
+        red_draw_direction = draw_direction_normalized
+        blue_draw_direction = -draw_direction_normalized
+    else:
+        red_draw_direction = -draw_direction_normalized
+        blue_draw_direction = draw_direction_normalized
+
+    print(f"Red mesh normal alignment: {alignment:.3f}")
     print(f"Red Draw Direction: {red_draw_direction}")
     print(f"Blue Draw Direction: {blue_draw_direction}")
 
@@ -520,7 +538,7 @@ def generate_metamold_red(mesh_path, mold_half_path, draw_direction):
         return
 
     # Step 1: Get draw directions
-    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction)
+    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction, merged_red)
 
     # Step 2: Calculate max extension distance and get boundary points
     max_distance, centroid, boundary_points = step2_calculate_max_extension_distance(
@@ -629,7 +647,7 @@ def generate_metamold_blue(mesh_path, mold_half_path, draw_direction):
         return
 
     # Step 1: Get draw directions
-    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction)
+    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction, merged_red)
 
     # Step 2: Calculate max extension distance and get boundary points
     max_distance, centroid, boundary_points = step2_calculate_max_extension_distance(
