@@ -797,7 +797,7 @@ def retracted_projected_points(mesh_path, mold_half_path, draw_direction):
         print(f"Error loading mesh: {e}")
         return
 
-    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction)
+    red_draw_direction, blue_draw_direction = step1_get_draw_directions(draw_direction,merged_red)
 
     max_distance, centroid, boundary_points = step2_calculate_max_extension_distance(
         red_mesh, red_draw_direction)
