@@ -256,10 +256,11 @@ def ruledSurface(file1, file2, file3):
     y_dim = bounds[3] - bounds[2]
     z_dim = bounds[5] - bounds[4]
 
-    largest_dimension = max(x_dim, y_dim, z_dim)
+    # Get the smaller of the two dimensions
+    middle_dimension = sorted([x_dim, y_dim, z_dim])[1]
 
-    # Calculate 10% of the largest dimension
-    dist = 0.15 * largest_dimension
+    # Calculate 30% of the largest dimension
+    dist = 0.8 * middle_dimension
 
     v1 = load_stl_vertices(file1)
     v2 = load_stl_vertices(file2)
