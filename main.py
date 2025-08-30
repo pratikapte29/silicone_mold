@@ -71,7 +71,7 @@ print(len(offset_mesh.faces))
 print(len(offset_mesh.vertices))
 
 # Display the offset surface along with mesh and convex hull
-display_offset_surface(offset_stl_path, mesh_path, convex_hull_path)
+# display_offset_surface(offset_stl_path, mesh_path, convex_hull_path)
 # offset_mesh.show()
 
 """ FINALIZE THE DRAW DIRECTION """

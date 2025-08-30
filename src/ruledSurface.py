@@ -282,7 +282,7 @@ def ruledSurface(file1, file2, file3):
     if len(boundary_pts) == 0:
         print("No boundary points found after sorting.")
         return
-    visualize_delaunay_and_boundary(delaunay_surface, boundary_pts)
+    # visualize_delaunay_and_boundary(delaunay_surface, boundary_pts)
 
     print("Translating sorted points...")
     expanded_pts = expand_points_by_translation(boundary_pts, centroid, dist)
@@ -315,7 +315,7 @@ def ruledSurface(file1, file2, file3):
     combined_surface = combined_surface.triangulate()
     combined_surface.save(combined_surface_path)
     print("Combined surface saved successfully.")
-    visualize_combined_surface(combined_surface)
+    # visualize_combined_surface(combined_surface)
 
     return combined_surface
 
