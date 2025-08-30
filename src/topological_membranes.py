@@ -162,6 +162,7 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
             save_mesh_with_membranes(mesh, created_membranes, stl_path, output_path)
     else:
         print("\nNo high-risk regions found - no membranes to create.")
+        save_mesh_with_membranes(mesh, [], stl_path, output_path)
 
     return mold_problems
 
