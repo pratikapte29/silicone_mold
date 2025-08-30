@@ -9,7 +9,8 @@ import networkx as nx
 
 
 def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
-                                angle_threshold=100, silicone_stretch_limit=3.0):
+                                angle_threshold=100, silicone_stretch_limit=3.0,
+                                save_with_membranes=True, output_path=None):
     """
     Analyze STL geometry to identify areas that would be problematic for silicone mold extraction.
 
@@ -18,6 +19,8 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
     - reference_normal: Reference direction vector (default: [0, 0, 1])
     - angle_threshold: Minimum angle in degrees to consider faces (default: 100)
     - silicone_stretch_limit: Maximum stretch ratio for silicone (default: 3.0)
+    - save_with_membranes: Whether to save mesh with membranes (default: True)
+    - output_path: Output file path (default: auto-generated from input)
     """
     # Normalize the reference direction
     reference_normal = reference_normal / np.linalg.norm(reference_normal)
@@ -39,7 +42,7 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
 
     if not np.any(problematic_faces):
         print("No problematic faces found.")
-        return
+        return []
 
     # Get coordinates of problematic face centers
     problem_centers = face_centers[problematic_faces]
@@ -112,14 +115,12 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
 
     # Find geodesic paths for high-risk regions
     high_risk_regions = [p for p in mold_problems if p['extraction_difficulty'] >= 0.7]
-
     geodesic_results = []
 
     if high_risk_regions:
         print(f"\n=== GEODESIC PATH ANALYSIS ===")
         print(f"Analyzing {len(high_risk_regions)} high-risk regions...")
 
-        # geodesic_results = []
         for region in high_risk_regions:
             geodesic_info = find_longest_geodesic_in_region(mesh, region)
             geodesic_results.append(geodesic_info)
@@ -136,13 +137,103 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
         # Visualize only the highest difficulty results (original function)
         visualize_highest_difficulty_only(mesh, problematic_faces, clusters, mold_problems, angle_threshold)
 
-    # Create and visualize membranes for high-risk regions
+    # CREATE AND SAVE MEMBRANES - MOVED OUTSIDE THE IF/ELSE BLOCKS
+    # This should run regardless of whether we have high-risk regions or not
     high_risk_regions = [p for p in mold_problems if p['extraction_difficulty'] >= 0.7]
+    created_membranes = []  # Store created membranes
+
     if high_risk_regions:
         print("\nGenerating extraction membranes for high-risk regions...")
+
+        # Create membranes and store them
+        for i, (problem, geodesic) in enumerate(zip(high_risk_regions, geodesic_results)):
+            membrane = create_membrane_from_geodesic(mesh, geodesic, reference_normal, thickness=0.4)
+            if membrane is not None:
+                created_membranes.append(membrane)
+                print(f"Created membrane {i + 1}: {len(membrane.points)} vertices, {membrane.n_faces} faces")
+            else:
+                print(f"Failed to create membrane {i + 1} - not enough valid intersections")
+
+        # Visualize
         visualize_with_membranes(mesh, high_risk_regions, geodesic_results, reference_normal)
 
+        # SAVE MESH WITH MEMBRANES
+        if save_with_membranes and created_membranes:
+            save_mesh_with_membranes(mesh, created_membranes, stl_path, output_path)
+    else:
+        print("\nNo high-risk regions found - no membranes to create.")
+
     return mold_problems
+
+
+def save_mesh_with_membranes(original_mesh, membranes, input_path, output_path=None):
+    """
+    Save the original mesh combined with all created membranes as a single STL file.
+
+    Args:
+        original_mesh (trimesh.Trimesh): Original mesh
+        membranes (list): List of PyVista membrane meshes
+        input_path (str): Original input file path
+        output_path (str): Output file path (optional)
+    """
+    import os
+    import trimesh
+
+    if output_path is None:
+        # Auto-generate output filename
+        base_name = os.path.splitext(input_path)[0]
+        output_path = f"{base_name}_with_membranes.stl"
+
+    print(f"\nSaving mesh with {len(membranes)} membranes...")
+
+    try:
+        # Convert PyVista membranes to trimesh objects
+        membrane_meshes = []
+
+        for i, membrane in enumerate(membranes):
+            # Convert PyVista to trimesh
+            # Get vertices
+            vertices = membrane.points
+
+            # Get faces (remove the '3' count from each face)
+            faces = membrane.faces.reshape(-1, 4)[:, 1:4]
+
+            # Create trimesh object
+            membrane_trimesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+
+            # Ensure the mesh is valid
+            membrane_trimesh.remove_degenerate_faces()
+            membrane_trimesh.remove_duplicate_faces()
+            membrane_trimesh.remove_unreferenced_vertices()
+
+            membrane_meshes.append(membrane_trimesh)
+            print(
+                f"  Converted membrane {i + 1} to trimesh: {len(membrane_trimesh.vertices)} vertices, {len(membrane_trimesh.faces)} faces")
+
+        # Combine original mesh with all membranes
+        all_meshes = [original_mesh] + membrane_meshes
+        combined_mesh = trimesh.util.concatenate(all_meshes)
+
+        # Clean up the combined mesh
+        combined_mesh.remove_degenerate_faces()
+        combined_mesh.remove_duplicate_faces()
+        combined_mesh.remove_unreferenced_vertices()
+
+        # Export the combined mesh
+        combined_mesh.export(output_path)
+
+        print(f"✅ Successfully saved combined mesh to: {output_path}")
+        print(f"   Total vertices: {len(combined_mesh.vertices)}")
+        print(f"   Total faces: {len(combined_mesh.faces)}")
+        print(f"   File size: {os.path.getsize(output_path) / 1024:.1f} KB")
+
+        return output_path
+
+    except Exception as e:
+        print(f"❌ Failed to save mesh with membranes: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def find_longest_geodesic_in_region(mesh, region):

@@ -222,7 +222,9 @@ analyze_mold_extractability(
     stl_path=os.path.join(results_dir, "repaired_blue_metamold.stl"),
     reference_normal=plane_normal_blue,
     angle_threshold=100,  # Optional: adjust as needed
-    silicone_stretch_limit=5.0  # Optional: adjust based on your silicone type
+    silicone_stretch_limit=5.0,  # Optional: adjust based on your silicone type
+    save_with_membranes=True,
+    output_path=os.path.join(results_dir, "blue_metamold_with_membranes.stl")
 )
 
 # RED METAMOLD
@@ -230,5 +232,7 @@ analyze_mold_extractability(
     stl_path=os.path.join(results_dir, "repaired_red_metamold.stl"),
     reference_normal=-1 * plane_normal_red,
     angle_threshold=100,  # Optional: adjust as needed
-    silicone_stretch_limit=5.0  # Optional: adjust based on your silicone type
+    silicone_stretch_limit=5.0,  # Optional: adjust based on your silicone type
+    save_with_membranes=True,
+    output_path=os.path.join(results_dir, "red_metamold_with_membranes.stl")
 )
