@@ -51,8 +51,9 @@ def create_ruled_surface_mesh(inner_points, outer_points):
 
     # Create a PolyData object
     ruled_surface = pv.PolyData(points, faces)
-    
+
     return ruled_surface
+
 
 def load_stl_vertices(filename):
     """Load STL file and extract unique vertices"""
@@ -61,6 +62,7 @@ def load_stl_vertices(filename):
     vertices_rounded = np.round(vertices, decimals=6)
     unique_vertices = np.unique(vertices_rounded, axis=0)
     return unique_vertices
+
 
 def expand_points_by_translation(points, centroid, distance):
     """
@@ -74,6 +76,7 @@ def expand_points_by_translation(points, centroid, distance):
     expanded_points = points + directions * distance
     return expanded_points
 
+
 def apply_delaunay_triangulation(common_points):
     """
     Apply Delaunay triangulation to common points and return the surface.
@@ -81,17 +84,18 @@ def apply_delaunay_triangulation(common_points):
     if len(common_points) < 3:
         print("Not enough points for Delaunay triangulation.")
         return None
-    
+
     # Create PyVista PolyData from common points
     surface_points = pv.PolyData(common_points)
-    
+
     # Apply Delaunay 2D triangulation
     delaunay_surf = surface_points.delaunay_2d()
-    
+
     # Smooth the surface
-    #smooth_surf = delaunay_surf.smooth(n_iter=50, relaxation_factor=0.5)
-    
+    # smooth_surf = delaunay_surf.smooth(n_iter=50, relaxation_factor=0.5)
+
     return delaunay_surf
+
 
 def sort_boundary_points(delaunay_surface):
     """
@@ -100,46 +104,46 @@ def sort_boundary_points(delaunay_surface):
     """
     # Extract the boundary edges of the surface
     edges = delaunay_surface.extract_feature_edges(
-        boundary_edges=True, 
-        non_manifold_edges=False, 
-        feature_edges=False, 
+        boundary_edges=True,
+        non_manifold_edges=False,
+        feature_edges=False,
         manifold_edges=False
     )
-    
+
     # Extract the boundary points from the boundary edges
     boundary_points = edges.points
     boundary_points_array = np.array(boundary_points)
-    
+
     if len(boundary_points_array) == 0:
         print("No boundary points found.")
         return np.array([])
-    
+
     edge_points_list = []
     boundary_points_sorted = []
-    
+
     # Iterate over each edge (cell) in the edges
     for i in range(edges.n_cells):
         edge = edges.get_cell(i)  # Get the i-th edge
         edge_points = edge.points  # Get the points of the edge
         # Append the two points as a list
         edge_points_list.append(edge_points[:2])  # Take the first two points
-    
+
     # Convert to lists for easier processing
     boundary_points_list = boundary_points_array.tolist()
     edge_points_list = [edge.tolist() for edge in edge_points_list]
-    
+
     if len(boundary_points_list) == 0:
         return np.array([])
-    
+
     # Start with the first point
     boundary_points_sorted.append(boundary_points_list[0])
     remaining_edges = edge_points_list.copy()
-    
+
     # Iterate until all nodes are sorted
     while len(boundary_points_sorted) < len(boundary_points_list):
         last_node = boundary_points_sorted[-1]
         found_next = False
-        
+
         for edge in remaining_edges[:]:
             if edge[0] == last_node and edge[1] not in boundary_points_sorted:
                 boundary_points_sorted.append(edge[1])
@@ -151,15 +155,16 @@ def sort_boundary_points(delaunay_surface):
                 remaining_edges.remove(edge)
                 found_next = True
                 break
-        
+
         if not found_next:
             break
-    
+
     # Close the loop by adding the first point at the end
     if len(boundary_points_sorted) > 0:
         boundary_points_sorted.append(boundary_points_sorted[0])
-    
+
     return np.array(boundary_points_sorted)
+
 
 def visualize_delaunay_and_boundary(delaunay_surface, boundary_points_sorted):
     """
@@ -167,12 +172,12 @@ def visualize_delaunay_and_boundary(delaunay_surface, boundary_points_sorted):
     """
     plotter = pv.Plotter()
     plotter.add_mesh(delaunay_surface, color='cyan', show_edges=True, opacity=1, label='Delaunay Surface')
-    
+
     if len(boundary_points_sorted) > 0:
         boundary_polydata = pv.PolyData(boundary_points_sorted)
-        plotter.add_mesh(boundary_polydata, color='red', point_size=10, 
-                        render_points_as_spheres=True, label='Sorted Boundary Points')
-    
+        plotter.add_mesh(boundary_polydata, color='red', point_size=10,
+                         render_points_as_spheres=True, label='Sorted Boundary Points')
+
     plotter.add_legend()
     plotter.show_axes()
     plotter.set_background('white')
@@ -185,23 +190,23 @@ def visualize_final_ruled_surface(delaunay_surface, ruled_surface, boundary_poin
     Visualize the final result with Delaunay surface and ruled surface.
     """
     plotter = pv.Plotter()
-    
+
     # Add Delaunay surface
     plotter.add_mesh(delaunay_surface, color='cyan', opacity=1, show_edges=True, label='Delaunay Surface')
-    
+
     # Add ruled surface
     plotter.add_mesh(ruled_surface, color='lightblue', opacity=1, show_edges=True, label='Ruled Surface')
-    
+
     # Add boundary points
     if len(boundary_points_sorted) > 0:
-        plotter.add_mesh(pv.PolyData(boundary_points_sorted), color='red', point_size=8, 
-                        render_points_as_spheres=True, label='Boundary Points')
-    
+        plotter.add_mesh(pv.PolyData(boundary_points_sorted), color='red', point_size=8,
+                         render_points_as_spheres=True, label='Boundary Points')
+
     # Add expanded points
     if len(expanded_points) > 0:
-        plotter.add_mesh(pv.PolyData(expanded_points), color='magenta', point_size=8, 
-                        render_points_as_spheres=True, label='Expanded Points')
-    
+        plotter.add_mesh(pv.PolyData(expanded_points), color='magenta', point_size=8,
+                         render_points_as_spheres=True, label='Expanded Points')
+
     plotter.add_legend()
     plotter.show_axes()
     plotter.set_background('white')
@@ -245,8 +250,7 @@ def combine_and_triangulate_surfaces(surface1, surface2):
 
 
 def ruledSurface(file1, file2, file3):
-
-    mesh1 = pv.read(file1)
+    mesh1 = pv.read(file3)
     centroid = mesh1.center
     input_mesh = pv.read(file3)
 

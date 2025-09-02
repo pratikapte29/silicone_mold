@@ -131,14 +131,17 @@ combined_mesh_path = os.path.join(results_dir, "combined_parting_surface.stl")
 
 print("Generating metamold halves...")
 
+
+# ! Note: Interchange the merged_red_path and merged_blue_path if the mold half is incorrectly generated.
+# ! To be fixed later.
 # Generate red metamold and save to file
 metamold_red_path, plane_normal_red = generate_metamold_red(
-    combined_mesh_path, merged_blue_path, draw_direction, combined_parting_surface, results_dir
+    combined_mesh_path, merged_red_path, draw_direction, combined_parting_surface, results_dir
 )
 
 # Generate blue metamold and save to file
 metamold_blue_path, plane_normal_blue = generate_metamold_blue(
-    combined_mesh_path, merged_red_path, draw_direction, combined_parting_surface, results_dir
+    combined_mesh_path, merged_blue_path, draw_direction, combined_parting_surface, results_dir
 )
 
 # Validate that the metamold files were created successfully
@@ -236,3 +239,4 @@ analyze_mold_extractability(
     save_with_membranes=True,
     output_path=os.path.join(results_dir, "red_metamold_with_membranes.stl")
 )
+
