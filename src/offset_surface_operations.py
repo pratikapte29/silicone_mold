@@ -62,7 +62,10 @@ def offset_stl_sdf(mesh_path: str, offset_distance: float, voxel_size=10):
 
     # setup offset parameters
     params = mrmeshpy.OffsetParameters()
-    params.voxelSize = voxel_size
+    params.voxelSize = closedMesh.computeBoundingBox().diagonal() * 5e-3
+
+    if mrmeshpy.findRightBoundary(closedMesh.topology).empty():
+        params.signDetectionMode = mrmeshpy.SignDetectionMode.HoleWindingRule  # use if you have holes in mesh
 
     # create positive offset mesh
     posOffset = mrmeshpy.offsetMesh(closedMesh, offset_distance, params)
