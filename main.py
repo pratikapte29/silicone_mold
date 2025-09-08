@@ -97,7 +97,7 @@ display_split_faces(red_mesh, blue_mesh)
 
 """ MERGE ISOLATED REGIONS """
 
-merged_red, merged_blue = cleanup_isolated_regions(red_mesh, blue_mesh)
+merged_red, merged_blue = red_mesh, blue_mesh# cleanup_isolated_regions(red_mesh, blue_mesh)
 
 # Save the merged meshes
 
