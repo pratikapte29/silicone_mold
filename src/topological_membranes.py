@@ -150,7 +150,7 @@ def analyze_mold_extractability(stl_path, reference_normal=np.array([0, 0, 1]),
             membrane = create_membrane_from_geodesic(mesh, geodesic, reference_normal, thickness=0.4)
             if membrane is not None:
                 created_membranes.append(membrane)
-                print(f"Created membrane {i + 1}: {len(membrane.points)} vertices, {membrane.n_faces} faces")
+                print(f"Created membrane {i + 1}: {len(membrane.points)} vertices, {membrane.n_cells} faces")
             else:
                 print(f"Failed to create membrane {i + 1} - not enough valid intersections")
 
@@ -880,7 +880,7 @@ def visualize_with_membranes(mesh, high_difficulty_problems, geodesic_results, r
             membrane_count += 1
 
             # Print membrane info
-            print(f"Created membrane {membrane_count}: {len(membrane.points)} vertices, {membrane.n_faces} faces")
+            print(f"Created membrane {membrane_count}: {len(membrane.points)} vertices, {membrane.n_cells} faces")
         else:
             print(f"Failed to create membrane {i + 1} - not enough valid intersections")
 

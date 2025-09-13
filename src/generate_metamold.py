@@ -347,7 +347,7 @@ def step5_create_ruled_surface(boundary_points, projected_points):
     # Create PyVista mesh
     ruled_surface = pv.PolyData(combined_points, faces)
 
-    print(f"Ruled surface created with {ruled_surface.n_points} points and {ruled_surface.n_faces} faces")
+    print(f"Ruled surface created with {ruled_surface.n_points} points and {ruled_surface.n_cells} faces")
 
     return ruled_surface
 
