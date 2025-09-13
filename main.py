@@ -1,5 +1,5 @@
 import trimesh
-import open3d as o3d
+import pyvista as pv
 import numpy as np
 import open3d as o3d
 
@@ -16,7 +16,8 @@ from src.generate_metamold import generate_metamold_blue
 from src.generate_metamold import validate_metamold_files
 from src.clean_mesh import STLMeshRepair
 
-
+# For creating the metamold covers:
+from src.create_metamold_cover import translate_sfc_boundary, calculate_mesh_height
 
 from src.topological_membranes import analyze_mold_extractability
 
@@ -124,6 +125,24 @@ display_split_faces(merged_red, merged_blue)
 combined_parting_surface = ruledSurface(
         merged_blue_path, merged_red_path, mesh_path
     )
+
+# ! CREATE THE MOLD BOX:
+
+sfc_centroid = combined_parting_surface.center
+height = calculate_mesh_height(merged_red, draw_direction)
+
+translated_points, translated_mesh, boundary_mesh = translate_sfc_boundary(
+    os.path.join(results_dir, "combined_parting_surface.stl"),
+    translation_vector=draw_direction,
+    distance=height * 1.10  # Upto 10% above the metamold height
+)
+
+plotter = pv.Plotter()
+plotter.add_mesh(translated_mesh, color="lightblue", point_size=10, render_points_as_spheres=True)
+plotter.add_mesh(boundary_mesh, color="red", point_size=10, render_points_as_spheres=True)
+plotter.add_mesh(merged_red, color="green", opacity=0.5)
+
+plotter.show()
 
 """ GENERATE THE METAMOLD HALVES """
 
