@@ -18,6 +18,7 @@ from src.clean_mesh import STLMeshRepair
 
 # For creating the metamold covers:
 from src.create_metamold_cover import translate_sfc_boundary, calculate_mesh_height
+from src.create_metamold_cover import create_delaunay_surface, create_ruled_surface
 
 from src.topological_membranes import analyze_mold_extractability
 
@@ -132,11 +133,15 @@ sfc_centroid = combined_parting_surface.center
 height = calculate_mesh_height(merged_red, draw_direction)
 
 # Translate the surface boundary points
-translated_points, translated_mesh, boundary_mesh = translate_sfc_boundary(
+translated_points, translated_mesh, boundary_mesh, boundary_points = translate_sfc_boundary(
     os.path.join(results_dir, "combined_parting_surface.stl"),
     draw_direction=draw_direction,
     height=height * 1.10  # Upto 10% above the metamold height
 )
+
+# Create Delaunay Surface of the translated points
+cover_base = create_delaunay_surface(translated_points)
+cover_side = create_ruled_surface(boundary_points, translated_points)
 
 # Translate the points to a plane instead of a fixed distance
 # Create Delaunay surface of the plane
@@ -148,6 +153,8 @@ plotter = pv.Plotter()
 plotter.add_mesh(translated_mesh, color="lightblue", point_size=10, render_points_as_spheres=True)
 plotter.add_mesh(boundary_mesh, color="red", point_size=10, render_points_as_spheres=True)
 plotter.add_mesh(merged_red, color="green", opacity=0.5)
+plotter.add_mesh(cover_base, color="yellow", opacity=0.5)
+plotter.add_mesh(cover_side, color="orange", opacity=0.5)
 
 plotter.show()
 

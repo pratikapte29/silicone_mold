@@ -81,7 +81,7 @@ def translate_sfc_boundary(stl_file_path, draw_direction, height):
     boundary_mesh = pv.PolyData(boundary_points)
     projected_mesh = pv.PolyData(projected_points)
 
-    return projected_points, projected_mesh, boundary_mesh
+    return projected_points, projected_mesh, boundary_mesh, boundary_points
 
 
 def calculate_mesh_height(mesh, direction_vector):
@@ -137,3 +137,72 @@ def calculate_mesh_height(mesh, direction_vector):
     height = np.max(rotated_points[:, 2]) - np.min(rotated_points[:, 2])
 
     return height
+
+
+def create_delaunay_surface(points):
+    """
+    Create a Delaunay triangulated surface from a set of 3D points.
+
+    Parameters:
+    -----------
+    points : numpy.ndarray
+        Array of 3D points (N x 3)
+
+    Returns:
+    --------
+    pv.PolyData
+        Delaunay triangulated surface mesh
+    """
+    # Create point cloud
+    point_cloud = pv.PolyData(points)
+
+    # Create Delaunay triangulation
+    delaunay_surface = point_cloud.delaunay_2d()
+
+    return delaunay_surface
+
+
+def create_ruled_surface(boundary_points, projected_points):
+    """
+    Create a ruled surface between two sets of corresponding points.
+
+    Parameters:
+    -----------
+    boundary_points : numpy.ndarray
+        Original boundary points (N x 3)
+    projected_points : numpy.ndarray
+        Projected boundary points (N x 3)
+
+    Returns:
+    --------
+    pv.PolyData
+        Ruled surface mesh connecting the two point sets
+    """
+    n_points = len(boundary_points)
+
+    # Create vertices by combining both point sets
+    vertices = np.vstack([boundary_points, projected_points])
+
+    # Create faces (quads connecting corresponding points)
+    faces = []
+    for i in range(n_points - 1):
+        # Current quad: boundary[i], boundary[i+1], projected[i+1], projected[i]
+        quad = [4,  # Number of vertices in this face
+                i,  # boundary_points[i]
+                i + 1,  # boundary_points[i+1]
+                i + 1 + n_points,  # projected_points[i+1]
+                i + n_points]  # projected_points[i]
+        faces.extend(quad)
+
+    # Close the surface by connecting last point to first
+    quad = [4,
+            n_points - 1,  # boundary_points[-1]
+            0,  # boundary_points[0]
+            n_points,  # projected_points[0]
+            2 * n_points - 1]  # projected_points[-1]
+    faces.extend(quad)
+
+    # Create mesh
+    ruled_surface = pv.PolyData(vertices, faces)
+
+    return ruled_surface
