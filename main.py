@@ -131,11 +131,18 @@ combined_parting_surface = ruledSurface(
 sfc_centroid = combined_parting_surface.center
 height = calculate_mesh_height(merged_red, draw_direction)
 
+# Translate the surface boundary points
 translated_points, translated_mesh, boundary_mesh = translate_sfc_boundary(
     os.path.join(results_dir, "combined_parting_surface.stl"),
-    translation_vector=draw_direction,
-    distance=height * 1.10  # Upto 10% above the metamold height
+    draw_direction=draw_direction,
+    height=height * 1.10  # Upto 10% above the metamold height
 )
+
+# Translate the points to a plane instead of a fixed distance
+# Create Delaunay surface of the plane
+# Translate the points inward along the combined_parting_surface only
+# Create ruled surfaces on the sides
+# Create Delaunay surface to close off the thickness
 
 plotter = pv.Plotter()
 plotter.add_mesh(translated_mesh, color="lightblue", point_size=10, render_points_as_spheres=True)
