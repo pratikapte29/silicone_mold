@@ -171,6 +171,9 @@ plotter.add_mesh(cover_surface2, color="orange", opacity=0.5)
 
 plotter.show()
 
+cover_surface2.save(os.path.join(results_dir, "metamold_cover_red.stl"))
+cover_surface1.save(os.path.join(results_dir, "metamold_cover_blue.stl"))
+
 """ GENERATE THE METAMOLD HALVES """
 
 combined_mesh_path = os.path.join(results_dir, "combined_parting_surface.stl")
@@ -286,3 +289,8 @@ analyze_mold_extractability(
     output_path=os.path.join(results_dir, "red_metamold_with_membranes.stl")
 )
 
+# TODO:
+# 1. Select the cover surface and the combined parting surface (but just the outer one, and the merged red and blue
+#    halves.
+# 2. Create a new stl from those
+# 3. That will act as the actual silicone mold
