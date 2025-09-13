@@ -142,6 +142,7 @@ translated_points, translated_mesh, boundary_mesh, boundary_points = translate_s
 # Create Delaunay Surface of the translated points
 cover_base = create_delaunay_surface(translated_points)
 cover_side = create_ruled_surface(boundary_points, translated_points)
+cover_surface = cover_side + cover_base
 
 # Translate the points to a plane instead of a fixed distance
 # Create Delaunay surface of the plane
@@ -153,8 +154,8 @@ plotter = pv.Plotter()
 plotter.add_mesh(translated_mesh, color="lightblue", point_size=10, render_points_as_spheres=True)
 plotter.add_mesh(boundary_mesh, color="red", point_size=10, render_points_as_spheres=True)
 plotter.add_mesh(merged_red, color="green", opacity=0.5)
-plotter.add_mesh(cover_base, color="yellow", opacity=0.5)
-plotter.add_mesh(cover_side, color="orange", opacity=0.5)
+plotter.add_mesh(cover_surface, color="yellow", opacity=0.5)
+# plotter.add_mesh(cover_side, color="orange", opacity=0.5)
 
 plotter.show()
 
